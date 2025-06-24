@@ -234,15 +234,10 @@ const SearchView: React.FC<SearchViewProps> = ({
       // Remove searching message and add results
       setMessages(prev => prev.filter(msg => !msg.isProcessing));
       
-      // Check if any candidates were found and create appropriate message
-      const finalMatches = currentMatches.length > 0 ? currentMatches : [];
-      
       const resultsMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: finalMatches.length === 0 
-          ? `🔍 Search complete! Unfortunately, no candidates were found matching your criteria. Please try adjusting your search query or filters to broaden the search.`
-          : `🎯 Search complete! Found ${finalMatches.length} candidate${finalMatches.length === 1 ? '' : 's'} using intelligent filtering + AI analysis. Results are being displayed with real-time scoring.`,
+        content: `🎯 Search complete! Found candidates using intelligent filtering + AI analysis. Results are being displayed with real-time scoring.`,
         timestamp: new Date()
       };
       
