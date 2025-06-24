@@ -240,6 +240,8 @@ const BetaCampaignView: React.FC<BetaCampaignViewProps> = ({
     console.log('🗑️ Preparing to delete campaign:', campaignId);
     setCampaignToDeleteId(campaignId);
     setShowDeleteConfirmation(true);
+    console.log('🔍 DEBUG: showDeleteConfirmation set to true, current value:', showDeleteConfirmation);
+    console.log('🔍 DEBUG: campaignToDeleteId set to:', campaignId);
   };
 
   const confirmDeleteCampaign = async () => {
@@ -606,6 +608,7 @@ const BetaCampaignView: React.FC<BetaCampaignViewProps> = ({
           <ConfirmationModal
             isOpen={showDeleteConfirmation}
             onClose={() => {
+              console.log('🔍 DEBUG: Closing delete confirmation modal');
               setShowDeleteConfirmation(false);
               setCampaignToDeleteId(null);
             }}

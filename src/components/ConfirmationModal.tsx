@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -22,7 +22,16 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   cancelText = 'Cancel',
   confirmVariant = 'danger'
 }) => {
-  if (!isOpen) return null;
+  console.log('🔍 DEBUG: ConfirmationModal rendering with isOpen =', isOpen);
+  
+  useEffect(() => {
+    console.log('🔍 DEBUG: ConfirmationModal useEffect triggered, isOpen =', isOpen);
+  }, [isOpen]);
+
+  if (!isOpen) {
+    console.log('🔍 DEBUG: ConfirmationModal not rendering because isOpen is false');
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -31,7 +40,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           <button
-            onClick={onClose}
+            onClick={() => {
+              console.log('🔍 DEBUG: Close button clicked in modal header');
+              onClose();
+            }}
             className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -46,13 +58,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         {/* Footer */}
         <div className="flex justify-end gap-3 p-4 bg-gray-50 border-t border-gray-200">
           <button
-            onClick={onClose}
+            onClick={() => {
+              console.log('🔍 DEBUG: Cancel button clicked');
+              onClose();
+            }}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             {cancelText}
           </button>
           <button
-            onClick={onConfirm}
+            onClick={() => {
+              console.log('🔍 DEBUG: Confirm button clicked');
+              onConfirm();
+            }}
             className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
               confirmVariant === 'danger'
                 ? 'bg-red-600 hover:bg-red-700'
