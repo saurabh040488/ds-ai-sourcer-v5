@@ -301,8 +301,8 @@ const SearchView: React.FC<SearchViewProps> = ({
     }
 
     try {
-      // Try to load saved search results
-      const { data: searchResults, error } = await getSearchResults(search, currentProject.id);
+      // Try to load saved search results with extracted entities
+      const { data: searchData, error } = await getSearchResults(search, currentProject.id);
       
       if (error) {
         console.error('❌ Error loading search results:', error);
@@ -311,11 +311,15 @@ const SearchView: React.FC<SearchViewProps> = ({
         return;
       }
 
-      if (searchResults && searchResults.length > 0) {
-        console.log('✅ Loaded saved search results:', searchResults.length);
+      if (searchData && searchData.length > 0) {
+        console.log('✅ Loaded saved search data:', searchData.length);
+        
+        // Get the first search record to extract the original search query and entities
+        const searchRecord = searchData[0];
+        console.log('📊 Search record:', searchRecord);
         
         // Convert database candidates to frontend format
-        const candidateMatches: CandidateMatch[] = searchResults.map((result: any) => {
+        const candidateMatches: CandidateMatch[] = searchData.map((result: any) => {
           // Find the candidate in our current candidates array
           const candidate = candidates.find(c => c.id === result.candidate_id);
           if (!candidate) {
@@ -337,48 +341,73 @@ const SearchView: React.FC<SearchViewProps> = ({
         setShowResults(true);
         setRecentSearchContext(search);
         
-        // Extract entities from the recent search to populate filters
-        try {
-          console.log('🔍 Extracting entities for recent search:', search);
-          const searchQuery = await extractEntities(search);
-          const filters = {
-            jobTitles: searchQuery.extractedEntities.jobTitles || [],
-            locations: searchQuery.extractedEntities.locations || [],
-            experienceRange: searchQuery.extractedEntities.experienceRange || {},
-            skills: searchQuery.extractedEntities.skills || [],
-            industries: searchQuery.extractedEntities.industries || [],
-            education: searchQuery.extractedEntities.education
-          };
-          setCurrentFilters(filters);
-          setCurrentSearchQuery(searchQuery);
-          console.log('✅ Filters extracted for recent search:', filters);
-        } catch (filterError) {
-          console.warn('⚠️ Could not extract filters for recent search:', filterError);
-          // Set basic filters based on the search string
-          const basicFilters = {
-            jobTitles: [],
-            locations: [],
-            experienceRange: {},
-            skills: [],
-            industries: [],
-            education: null
-          };
-          setCurrentFilters(basicFilters);
+        // Extract filters from the saved search record
+        if (searchRecord.extracted_entities) {
+          console.log('🔍 Found saved extracted entities:', searchRecord.extracted_entities);
           
-          // Create a basic search query
-          const basicSearchQuery: SearchQuery = {
+          const filters = {
+            jobTitles: searchRecord.extracted_entities.jobTitles || [],
+            locations: searchRecord.extracted_entities.locations || [],
+            experienceRange: searchRecord.extracted_entities.experienceRange || {},
+            skills: searchRecord.extracted_entities.skills || [],
+            industries: searchRecord.extracted_entities.industries || [],
+            education: searchRecord.extracted_entities.education
+          };
+          
+          setCurrentFilters(filters);
+          
+          // Create search query object
+          const searchQuery: SearchQuery = {
             originalQuery: search,
-            extractedEntities: {
+            extractedEntities: searchRecord.extracted_entities
+          };
+          setCurrentSearchQuery(searchQuery);
+          
+          console.log('✅ Filters loaded from database:', filters);
+        } else {
+          console.log('⚠️ No extracted entities found in saved search, extracting from query...');
+          
+          // Fallback: extract entities from the search string
+          try {
+            const searchQuery = await extractEntities(search);
+            const filters = {
+              jobTitles: searchQuery.extractedEntities.jobTitles || [],
+              locations: searchQuery.extractedEntities.locations || [],
+              experienceRange: searchQuery.extractedEntities.experienceRange || {},
+              skills: searchQuery.extractedEntities.skills || [],
+              industries: searchQuery.extractedEntities.industries || [],
+              education: searchQuery.extractedEntities.education
+            };
+            setCurrentFilters(filters);
+            setCurrentSearchQuery(searchQuery);
+            console.log('✅ Filters extracted from query text:', filters);
+          } catch (filterError) {
+            console.warn('⚠️ Could not extract filters for recent search:', filterError);
+            // Set basic empty filters
+            const basicFilters = {
               jobTitles: [],
               locations: [],
               experienceRange: {},
               skills: [],
               industries: [],
-              education: undefined
-            }
-          };
-          setCurrentSearchQuery(basicSearchQuery);
-          console.log('✅ Set basic filters for recent search');
+              education: null
+            };
+            setCurrentFilters(basicFilters);
+            
+            const basicSearchQuery: SearchQuery = {
+              originalQuery: search,
+              extractedEntities: {
+                jobTitles: [],
+                locations: [],
+                experienceRange: {},
+                skills: [],
+                industries: [],
+                education: undefined
+              }
+            };
+            setCurrentSearchQuery(basicSearchQuery);
+            console.log('✅ Set basic filters for recent search');
+          }
         }
         
         // Clear any existing messages and show a simple message about loaded results
@@ -729,6 +758,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                         </div>
                       </div>
                     ))}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
               </div>

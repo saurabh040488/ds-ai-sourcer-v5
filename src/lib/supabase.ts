@@ -484,20 +484,25 @@ export const getSearchResults = async (query: string, projectId: string) => {
   try {
     const { data, error } = await supabase
       .from('searches')
-      .select('results')
+      .select('results, extracted_entities')
       .eq('query', query)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .order('created_at', { ascending: false });
       
     if (error) {
       console.error('❌ Supabase: Error getting search results:', error);
-    } else {
-      console.log('✅ Supabase: Search results retrieved successfully');
+      return { data: null, error };
+    } 
+    
+    if (!data || data.length === 0) {
+      console.log('⚠️ Supabase: No search results found for query:', query);
+      return { data: null, error: { message: 'No results found' } };
     }
     
-    return { data: data?.results, error };
+    console.log('✅ Supabase: Search results retrieved successfully:', data.length);
+    
+    // Return the results array from the first matching search
+    return { data: data[0].results, error: null, extracted_entities: data[0].extracted_entities };
   } catch (err) {
     console.error('❌ Supabase: Get search results exception:', err);
     return { data: null, error: err as any };
