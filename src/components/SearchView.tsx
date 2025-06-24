@@ -75,19 +75,7 @@ const SearchView: React.FC<SearchViewProps> = ({
       label: 'Job Description', 
       icon: FileText, 
       placeholder: 'Paste job description here...'
-    },
-    { 
-      id: 'boolean', 
-      label: 'Boolean Search', 
-      icon: Code, 
-      placeholder: 'Enter boolean search query...'
-    },
-    { 
-      id: 'manual', 
-      label: 'Advanced Filters', 
-      icon: Users, 
-      placeholder: 'Use advanced filters...'
-    },
+    }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -180,6 +168,11 @@ const SearchView: React.FC<SearchViewProps> = ({
       setIsProcessing(false);
       setInputValue('');
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion);
+    inputRef.current?.focus();
   };
 
   const handleSearchCandidates = async (searchQuery: SearchQuery) => {
