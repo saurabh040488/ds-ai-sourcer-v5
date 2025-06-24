@@ -339,13 +339,14 @@ const SearchView: React.FC<SearchViewProps> = ({
         
         // Extract entities from the recent search to populate filters
         try {
+          console.log('🔍 Extracting entities for recent search:', search);
           const searchQuery = await extractEntities(search);
           const filters = {
-            jobTitles: searchQuery.extractedEntities.jobTitles,
-            locations: searchQuery.extractedEntities.locations,
-            experienceRange: searchQuery.extractedEntities.experienceRange,
-            skills: searchQuery.extractedEntities.skills,
-            industries: searchQuery.extractedEntities.industries,
+            jobTitles: searchQuery.extractedEntities.jobTitles || [],
+            locations: searchQuery.extractedEntities.locations || [],
+            experienceRange: searchQuery.extractedEntities.experienceRange || {},
+            skills: searchQuery.extractedEntities.skills || [],
+            industries: searchQuery.extractedEntities.industries || [],
             education: searchQuery.extractedEntities.education
           };
           setCurrentFilters(filters);
@@ -354,14 +355,30 @@ const SearchView: React.FC<SearchViewProps> = ({
         } catch (filterError) {
           console.warn('⚠️ Could not extract filters for recent search:', filterError);
           // Set basic filters based on the search string
-          setCurrentFilters({
+          const basicFilters = {
             jobTitles: [],
             locations: [],
             experienceRange: {},
             skills: [],
             industries: [],
             education: null
-          });
+          };
+          setCurrentFilters(basicFilters);
+          
+          // Create a basic search query
+          const basicSearchQuery: SearchQuery = {
+            originalQuery: search,
+            extractedEntities: {
+              jobTitles: [],
+              locations: [],
+              experienceRange: {},
+              skills: [],
+              industries: [],
+              education: undefined
+            }
+          };
+          setCurrentSearchQuery(basicSearchQuery);
+          console.log('✅ Set basic filters for recent search');
         }
         
         // Clear any existing messages and show a simple message about loaded results
@@ -795,7 +812,14 @@ const SearchView: React.FC<SearchViewProps> = ({
         <FilterModal
           isOpen={showFilterModal}
           onClose={() => setShowFilterModal(false)}
-          filters={currentFilters}
+          filters={currentFilters || {
+            jobTitles: [],
+            locations: [],
+            experienceRange: {},
+            skills: [],
+            industries: [],
+            education: null
+          }}
           onSave={(filters) => {
             handleEditFilters(filters);
             setShowFilterModal(false);
