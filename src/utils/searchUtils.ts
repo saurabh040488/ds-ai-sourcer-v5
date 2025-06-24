@@ -291,7 +291,8 @@ export async function searchCandidates(
   if (filteredCandidates.length === 0) {
     console.log('❌ No candidates passed hard filters, falling back to all candidates');
     // If no candidates pass hard filters, use all candidates but with lower scores
-    return await runAIAnalysisOnAll(candidates.slice(0, 20), searchQuery, onPartialResults);
+    // return await runAIAnalysisOnAll(candidates.slice(0, 20), searchQuery, onPartialResults);
+    return []
   }
   
   // STEP 2: Apply simple keyword matching for additional scoring
@@ -302,7 +303,8 @@ export async function searchCandidates(
   if (keywordMatches.length === 0) {
     console.log('❌ No candidates passed keyword matching, using filtered candidates');
     // Use filtered candidates if keyword matching fails
-    return await runAIAnalysisOnAll(filteredCandidates.slice(0, 20), searchQuery, onPartialResults);
+    // return await runAIAnalysisOnAll(filteredCandidates.slice(0, 20), searchQuery, onPartialResults);
+    return []
   }
   
   // STEP 3: AI analysis only on pre-filtered candidates with streaming
