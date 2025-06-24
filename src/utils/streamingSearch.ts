@@ -1,4 +1,4 @@
-import { Candidate, SearchQuery, CandidateMatch, MatchExplanation } from '../types';
+import { Candidate, SearchQuery, CandidateMatch } from '../types';
 import { searchCandidates } from './searchUtils';
 
 /**

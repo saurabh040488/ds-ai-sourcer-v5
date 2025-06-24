@@ -1,14 +1,8 @@
-import OpenAI from 'openai';
 import { getAIModelForTask } from '../config/ai';
 import { CampaignExample, CampaignDraft, AssistantMessage } from '../types';
 import { campaignExamples, findCampaignExampleByGoal, findCampaignExampleById } from '../data/campaignExamples';
 import { type EmailStep } from './openai';
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+import { openai, cleanJsonResponse, parseJsonSafely } from './aiUtils';
 
 interface AssistantResponse {
   message: string;
@@ -16,16 +10,6 @@ interface AssistantResponse {
   campaignDraft?: Partial<CampaignDraft>;
   nextStep?: 'goal' | 'audience' | 'tone' | 'context' | 'review' | 'generate';
   isComplete?: boolean;
-}
-
-// Utility function to clean markdown code blocks from AI responses
-function cleanJsonResponse(response: string): string {
-  // Remove markdown code block syntax
-  return response
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
 }
 
 export async function processUserInput(
@@ -169,7 +153,7 @@ Please process this input, classify against available campaign examples, and pro
     console.log('🧹 Cleaned response:', cleanedResponse);
 
     // Parse the JSON response
-    const parsedResponse = JSON.parse(cleanedResponse);
+    const parsedResponse = parseJsonSafely(cleanedResponse);
     
     // Validate and enhance the response
     const result: AssistantResponse = {
@@ -410,7 +394,7 @@ CRITICAL: Each email must be ${lengthSpec.range} in length with a ${draft.tone |
     console.log('🧹 Cleaned campaign response:', cleanedResponse);
 
     // Parse and validate the response
-    const result = JSON.parse(cleanedResponse);
+    const result = parseJsonSafely(cleanedResponse);
     
     // Ensure email steps have proper structure
     const emailSteps: EmailStep[] = result.emailSteps.map((step: any, index: number) => ({

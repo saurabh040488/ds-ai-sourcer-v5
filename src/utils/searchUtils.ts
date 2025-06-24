@@ -1,45 +1,10 @@
 import { Candidate, SearchQuery, CandidateMatch, MatchExplanation } from '../types';
-import OpenAI from 'openai';
 import { getAIModelForTask, getPromptForTask } from '../config/ai';
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
-
-// Logging utility
-const logAIInteraction = (operation: string, prompt: string, response: string, metadata?: any) => {
-  console.group(`🤖 AI ${operation}`);
-  console.log('📤 PROMPT SENT:', prompt);
-  console.log('📥 RESPONSE RECEIVED:', response);
-  if (metadata) {
-    console.log('📊 METADATA:', metadata);
-  }
-  console.groupEnd();
-};
-
-const logError = (operation: string, error: any, context?: any) => {
-  console.group(`❌ ERROR in ${operation}`);
-  console.error('Error:', error);
-  if (context) {
-    console.log('Context:', context);
-  }
-  console.groupEnd();
-};
+import { openai, cleanJsonResponse, logAIInteraction, logError } from './aiUtils';
 
 // Utility function to clean OpenAI API response from markdown code blocks
 const cleanJSONResponse = (response: string): string => {
-  if (!response || typeof response !== 'string') {
-    return response;
-  }
-  
-  // Remove markdown code block delimiters
-  return response
-    .replace(/^```json\s*/i, '') // Remove opening ```json
-    .replace(/^```\s*/i, '')     // Remove opening ```
-    .replace(/\s*```\s*$/i, '')  // Remove closing ```
-    .trim();                     // Remove any surrounding whitespace
+  return cleanJsonResponse(response);
 };
 
 export async function expandJobTitles(jobTitle: string): Promise<string[]> {
