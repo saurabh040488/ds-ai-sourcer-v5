@@ -478,7 +478,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                       </div>
                     )}
                     
-                    {/* Search Process Overview */}
+                    {/* Search Process Overview 
                     <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 max-w-3xl mx-auto">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Zap className="w-5 h-5 text-purple-600" />
@@ -507,7 +507,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div>*/}
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl mx-auto">
                       {[
