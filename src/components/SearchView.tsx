@@ -101,8 +101,8 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     console.log('🚀 Starting search process for query:', inputValue);
 
-    // DO NOT save to recent searches here - only save after successful database save
-    // This will be handled in App.tsx after the search is saved to the database
+    // Save to recent searches
+    onSaveRecentSearch(inputValue);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -256,9 +256,7 @@ const SearchView: React.FC<SearchViewProps> = ({
       
       setMessages(prev => [...prev, resultsMessage]);
       
-      // Call the parent onSearch for any additional handling (including database save)
-      // The parent component (App.tsx) will handle saving to database and updating recent searches
-      // ONLY if there are results found
+      // Call the parent onSearch for any additional handling
       onSearch(searchQuery);
       
     } catch (error) {
