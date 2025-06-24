@@ -372,23 +372,8 @@ function applyLenientHardFilters(candidates: Candidate[], searchQuery: SearchQue
         if (!location || typeof location !== 'string') return false;
         
         const locationLower = location.toLowerCase();
-        console.log('candidate location:,', candidateLocation , 'extraced location:', locationLower, (
-          candidateLocation.includes(locationLower) ||
-          locationLower.includes(candidateLocation)
-          // // Check for state/country matches
-          // (locationLower.includes('new york') && candidateLocation.includes('ny')) ||
-          // (locationLower.includes('ny') && candidateLocation.includes('new york')) ||
-          // (locationLower.includes('los angeles') && candidateLocation.includes('la')) ||
-          // (locationLower.includes('la') && candidateLocation.includes('los angeles'))
-        ))
         return (
-          candidateLocation.includes(locationLower) ||
-          locationLower.includes(candidateLocation)
-          // // Check for state/country matches
-          // (locationLower.includes('new york') && candidateLocation.includes('ny')) ||
-          // (locationLower.includes('ny') && candidateLocation.includes('new york')) ||
-          // (locationLower.includes('los angeles') && candidateLocation.includes('la')) ||
-          // (locationLower.includes('la') && candidateLocation.includes('los angeles'))
+          candidateLocation.includes(locationLower) || locationLower.includes(candidateLocation)
         );
       });
     });
