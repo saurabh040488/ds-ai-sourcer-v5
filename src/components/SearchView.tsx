@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Sparkles, User, Bot, Edit, Share, Plus, FileText, Code, Users, Upload, Loader2, Filter, Eye, Clock, Zap } from 'lucide-react';
 import { SearchQuery, CandidateMatch, Candidate } from '../types';
 import { extractEntities } from '../utils/searchUtils';
@@ -54,14 +54,10 @@ const SearchView: React.FC<SearchViewProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [currentSearchQuery, setCurrentSearchQuery] = useState<SearchQuery | null>(null);
+  const [recentSearchContext, setRecentSearchContext] = useState<string | null>(null);
 
-  // Update current matches when matches prop changes
-  React.useEffect(() => {
-    if (matches && matches.length > 0) {
-      setCurrentMatches(matches);
-      setShowResults(true);
-    }
-  }, [matches]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const searchMethods = [
     { 
@@ -77,6 +73,26 @@ const SearchView: React.FC<SearchViewProps> = ({
       placeholder: 'Paste job description here...'
     }
   ];
+
+  // Update current matches when matches prop changes
+  React.useEffect(() => {
+    if (matches && matches.length > 0) {
+      setCurrentMatches(matches);
+      setShowResults(true);
+    }
+  }, [matches]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Focus input when not processing
+  useEffect(() => {
+    if (!isProcessing && !isSearching) {
+      inputRef.current?.focus();
+    }
+  }, [isProcessing, isSearching]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -319,6 +335,34 @@ const SearchView: React.FC<SearchViewProps> = ({
 
         setCurrentMatches(candidateMatches);
         setShowResults(true);
+        setRecentSearchContext(search);
+        
+        // Extract entities from the recent search to populate filters
+        try {
+          const searchQuery = await extractEntities(search);
+          const filters = {
+            jobTitles: searchQuery.extractedEntities.jobTitles,
+            locations: searchQuery.extractedEntities.locations,
+            experienceRange: searchQuery.extractedEntities.experienceRange,
+            skills: searchQuery.extractedEntities.skills,
+            industries: searchQuery.extractedEntities.industries,
+            education: searchQuery.extractedEntities.education
+          };
+          setCurrentFilters(filters);
+          setCurrentSearchQuery(searchQuery);
+          console.log('✅ Filters extracted for recent search:', filters);
+        } catch (filterError) {
+          console.warn('⚠️ Could not extract filters for recent search:', filterError);
+          // Set basic filters based on the search string
+          setCurrentFilters({
+            jobTitles: [],
+            locations: [],
+            experienceRange: {},
+            skills: [],
+            industries: [],
+            education: null
+          });
+        }
         
         // Clear any existing messages and show a simple message about loaded results
         setMessages([]);
@@ -390,6 +434,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                 setCurrentMatches([]);
                 setCurrentFilters(null);
                 setCurrentSearchQuery(null);
+                setRecentSearchContext(null);
               }}
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-lg"
             >
@@ -705,6 +750,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                   ) : (
                     <div className="relative">
                       <input
+                        ref={inputRef}
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
