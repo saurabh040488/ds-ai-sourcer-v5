@@ -372,6 +372,7 @@ function applyLenientHardFilters(candidates: Candidate[], searchQuery: SearchQue
         if (!location || typeof location !== 'string') return false;
         
         const locationLower = location.toLowerCase();
+        console.log(candidateLocation , locationLower)
         return (
           candidateLocation.includes(locationLower) ||
           locationLower.includes(candidateLocation) ||
