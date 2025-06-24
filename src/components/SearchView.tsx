@@ -451,7 +451,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                       Intelligent Candidate Search
                     </h2>
                     
-                    {/* Recent Searches */}
+                    {/* Recent Searches 
                     {recentSearches.length > 0 && (
                       <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200 max-w-3xl mx-auto">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -473,7 +473,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                           ))}
                         </div>
                       </div>
-                    )}
+                    )}*/}
                     
                     {/* Search Process Overview 
                     <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 max-w-3xl mx-auto">
