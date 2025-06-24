@@ -696,6 +696,57 @@ export const updateCampaign = async (
   }
 };
 
+// New function to delete a campaign
+export const deleteCampaign = async (campaignId: string) => {
+  console.log('🗑️ Supabase: Deleting campaign:', campaignId);
+  
+  try {
+    // First delete related campaign steps
+    const { error: stepsError } = await supabase
+      .from('campaign_steps')
+      .delete()
+      .eq('campaign_id', campaignId);
+      
+    if (stepsError) {
+      console.error('❌ Supabase: Error deleting campaign steps:', stepsError);
+      return { error: stepsError };
+    }
+    
+    console.log('✅ Supabase: Campaign steps deleted successfully');
+    
+    // Then delete related campaign candidates
+    const { error: candidatesError } = await supabase
+      .from('campaign_candidates')
+      .delete()
+      .eq('campaign_id', campaignId);
+      
+    if (candidatesError) {
+      console.error('❌ Supabase: Error deleting campaign candidates:', candidatesError);
+      // Continue with campaign deletion even if this fails
+    } else {
+      console.log('✅ Supabase: Campaign candidates deleted successfully');
+    }
+    
+    // Finally delete the campaign itself
+    const { error } = await supabase
+      .from('campaigns')
+      .delete()
+      .eq('id', campaignId);
+      
+    if (error) {
+      console.error('❌ Supabase: Error deleting campaign:', error);
+      return { error };
+    }
+    
+    console.log('✅ Supabase: Campaign deleted successfully');
+    return { error: null };
+    
+  } catch (err) {
+    console.error('❌ Supabase: Delete campaign exception:', err);
+    return { error: err as any };
+  }
+};
+
 // Campaign Candidate helpers
 const addCandidatesToCampaign = async (
   campaignId: string,

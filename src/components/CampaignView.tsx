@@ -3,8 +3,9 @@ import { Plus, Mail, Users, Target, MessageSquare, Clock, Sparkles, ArrowLeft, S
 import CampaignSetup from './CampaignSetup';
 import CampaignStepsEditor from './CampaignStepsEditor';
 import { AuthContext } from './AuthWrapper';
-import { Project, getCampaigns, Campaign as DatabaseCampaign, CampaignStep } from '../lib/supabase';
+import { Project, getCampaigns, Campaign as DatabaseCampaign, CampaignStep, deleteCampaign } from '../lib/supabase';
 import { type EmailStep } from '../utils/openai';
+import ConfirmationModal from './ConfirmationModal';
 
 interface Campaign extends DatabaseCampaign {
   campaign_steps?: CampaignStep[];
@@ -28,6 +29,11 @@ const CampaignView: React.FC<CampaignViewProps> = ({ onCampaignCreationChange, c
   // Campaign creation state
   const [campaignData, setCampaignData] = useState<any>(null);
   const [emailSteps, setEmailSteps] = useState<EmailStep[]>([]);
+
+  // Delete confirmation state
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [campaignToDeleteId, setCampaignToDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (user && currentProject) {
@@ -211,9 +217,35 @@ const CampaignView: React.FC<CampaignViewProps> = ({ onCampaignCreationChange, c
   };
 
   const handleDeleteCampaign = (campaignId: string) => {
-    if (confirm('Are you sure you want to delete this campaign?')) {
-      console.log('🗑️ Deleting campaign:', campaignId);
-      // TODO: Implement campaign deletion
+    console.log('🗑️ Preparing to delete campaign:', campaignId);
+    setCampaignToDeleteId(campaignId);
+    setShowDeleteConfirmation(true);
+  };
+
+  const confirmDeleteCampaign = async () => {
+    if (!campaignToDeleteId) return;
+    
+    console.log('🗑️ Confirming deletion of campaign:', campaignToDeleteId);
+    setIsDeleting(true);
+    
+    try {
+      const { error } = await deleteCampaign(campaignToDeleteId);
+      
+      if (error) {
+        console.error('❌ Error deleting campaign:', error);
+        alert(`Failed to delete campaign: ${error.message}`);
+      } else {
+        console.log('✅ Campaign deleted successfully');
+        // Remove the campaign from the local state
+        setCampaigns(prev => prev.filter(campaign => campaign.id !== campaignToDeleteId));
+      }
+    } catch (error) {
+      console.error('❌ Exception in confirmDeleteCampaign:', error);
+      alert('An unexpected error occurred while deleting the campaign');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+      setCampaignToDeleteId(null);
     }
   };
 
@@ -479,6 +511,28 @@ const CampaignView: React.FC<CampaignViewProps> = ({ onCampaignCreationChange, c
         </div>
       );
   }
+
+  // Confirmation Modal for Delete
+  return (
+    <>
+      {/* Main content rendered above */}
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={() => {
+          setShowDeleteConfirmation(false);
+          setCampaignToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteCampaign}
+        title="Delete Campaign"
+        message="Are you sure you want to delete this campaign? This action cannot be undone."
+        confirmText={isDeleting ? "Deleting..." : "Delete Campaign"}
+        cancelText="Cancel"
+        confirmVariant="danger"
+      />
+    </>
+  );
 };
 
 export default CampaignView;
