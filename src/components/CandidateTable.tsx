@@ -26,7 +26,7 @@ const CandidateTable: React.FC<CandidateTableProps> = ({
   const [showShortlistModal, setShowShortlistModal] = useState(false);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [shortlistAction, setShortlistAction] = useState<'single' | 'bulk'>('single');
-  const [campaignAction, setCampaignAction] = useState<'single' | 'bulk'>('single');
+  const [campaignAction, setCampaignAction] = useState<'single' | 'bulk'>('bulk');
   const [selectedCandidateForShortlist, setSelectedCandidateForShortlist] = useState<string | null>(null);
   const [selectedCandidateForCampaign, setSelectedCandidateForCampaign] = useState<string | null>(null);
   const [selectedCandidateForDetail, setSelectedCandidateForDetail] = useState<Candidate | null>(null);
@@ -296,42 +296,51 @@ const CandidateTable: React.FC<CandidateTableProps> = ({
           </div>
         </div>
 
-        {/* Filters Bar */}
-        {activeFilters && activeFilters.length > 0 && (
+        {/* Filters Bar - Always show if filters exist or onEditFilters is available */}
+        {(activeFilters && activeFilters.length > 0) || onEditFilters ? (
           <div className="border-b border-gray-200 px-6 py-3 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-wrap">
-                {activeFilters.map((filter, index) => {
-                  const Icon = filter.icon;
-                  return (
-                    <div key={index} className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">{filter.label}</span>
-                      {filter.extra && filter.expandable && (
-                        <button 
-                          className="text-xs text-purple-600 font-medium hover:text-purple-700"
-                          title={filter.allItems ? filter.allItems.join(', ') : ''}
-                        >
-                          {filter.extra}
-                        </button>
-                      )}
-                      {filter.extra && !filter.expandable && (
-                        <span className="text-xs text-purple-600 font-medium">{filter.extra}</span>
-                      )}
-                    </div>
-                  );
-                })}
+                {activeFilters && activeFilters.length > 0 ? (
+                  activeFilters.map((filter, index) => {
+                    const Icon = filter.icon;
+                    return (
+                      <div key={index} className="flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">{filter.label}</span>
+                        {filter.extra && filter.expandable && (
+                          <button 
+                            className="text-xs text-purple-600 font-medium hover:text-purple-700"
+                            title={filter.allItems ? filter.allItems.join(', ') : ''}
+                          >
+                            {filter.extra}
+                          </button>
+                        )}
+                        {filter.extra && !filter.expandable && (
+                          <span className="text-xs text-purple-600 font-medium">{filter.extra}</span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Filter className="w-4 h-4 text-gray-400" />
+                    <span>Search filters applied</span>
+                  </div>
+                )}
               </div>
-              <button 
-                onClick={onEditFilters}
-                className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Filters →
-              </button>
+              {onEditFilters && (
+                <button 
+                  onClick={onEditFilters}
+                  className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Filters →
+                </button>
+              )}
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Table */}
         <div className="flex-1 overflow-auto">
