@@ -70,6 +70,14 @@ CRITICAL FLOW RULE:
 - Ensure isComplete remains false until all necessary information for generation is collected
 - The conversation should flow smoothly without requiring additional user prompts for confirmation at this stage
 
+AUDIENCE STEP SPECIFIC INSTRUCTIONS:
+- When in the 'audience' step, if recent searches are available, extract specific target audience descriptions from them
+- Put these specific audience suggestions in the "suggestions" array, NOT in the main message
+- The main message should be a general question about target audience
+- Each suggestion should be a complete, actionable target audience description
+- Example suggestions format: ["Oncology Nurses in Denver with 5+ years experience", "Clinical Nurse Specialists in London", "Emergency Room Nurses in New York"]
+- Do NOT embed suggestions within the message text - always use the suggestions array
+
 RESPONSE FORMAT:
 Always respond with a JSON object containing:
 {
@@ -89,7 +97,7 @@ GUIDELINES:
 - Be conversational and helpful
 - Ask one question at a time
 - Provide specific suggestions based on available campaign examples
-- For audience suggestions, prioritize insights from recent searches when available
+- For audience suggestions, prioritize insights from recent searches when available and put them in the suggestions array
 - Match user goals to existing campaign examples when possible
 - Keep responses concise but informative
 - Always include relevant suggestions to guide the user
@@ -97,6 +105,7 @@ GUIDELINES:
 - Set isComplete to true only when ready to generate the campaign
 - CRITICAL: Always include matchedExampleId when a goal is identified
 - CRITICAL: Automatically transition to 'audience' step when goal and matchedExampleId are set
+- CRITICAL: For audience step, put specific target audience options in suggestions array, not in message text
 
 Current conversation context: The user is ${getConversationStage(currentDraft)}`;
 
@@ -114,7 +123,7 @@ ${conversationContext}
 
 User input: "${userInput}"
 
-Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified, and automatically transition to 'audience' step when goal is set.`;
+Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified, and automatically transition to 'audience' step when goal is set. For audience step, put specific target audience options in suggestions array.`;
 
   try {
     console.log('📤 Sending request to OpenAI...');
@@ -163,6 +172,22 @@ Please process this input, classify against available campaign examples, and pro
       // Goal was just set, automatically transition to audience
       result.nextStep = 'audience';
       console.log('🎯 Goal identified and matched, automatically transitioning to audience step');
+    }
+
+    // Enhanced audience step handling with recent searches
+    if (result.nextStep === 'audience' && recentSearches.length > 0 && (!result.suggestions || result.suggestions.length === 0)) {
+      console.log('🎯 Audience step detected with recent searches, generating audience suggestions...');
+      
+      // Generate audience suggestions from recent searches
+      const audienceSuggestions = recentSearches.slice(0, 3).map(search => {
+        // Convert search queries to target audience descriptions
+        return `Candidates matching: "${search}"`;
+      });
+      
+      result.suggestions = audienceSuggestions;
+      result.message = "Great! Now let's define your target audience. Based on your recent searches, I've prepared some options for you to choose from, or you can describe a different audience.";
+      
+      console.log('✅ Generated audience suggestions from recent searches:', audienceSuggestions);
     }
 
     console.log('✅ Processed AI response:', result);
@@ -342,10 +367,10 @@ function createFallbackResponse(userInput: string, currentDraft: Partial<Campaig
       ]
     },
     audience: {
-      message: "Great goal! Now, who is your target audience for this campaign?",
+      message: "Great! Now let's define your target audience. Who would you like to reach with this campaign?",
       suggestions: recentSearches.length > 0 ? 
-        // Use recent searches directly as suggestions
-        recentSearches.slice(0, 4) :
+        // Use recent searches as audience suggestions
+        recentSearches.slice(0, 3).map(search => `Candidates matching: "${search}"`) :
         // Default suggestions if no recent searches
         [
           "Healthcare professionals nationwide",
