@@ -272,8 +272,8 @@ export async function searchCandidates(
   console.log('🔧 STEP 3: Running AI analysis on keyword-matched candidates...');
 
    
-   const candidatesForAI = keywordMatches.slice(0, MAX_AI_ANALYSIS_CANDIDATES);
-   const candidatesForBasicMatch = keywordMatches.slice(MAX_AI_ANALYSIS_CANDIDATES);
+   const candidatesForAI = keywordMatches.slice(0, 20);
+   const candidatesForBasicMatch = keywordMatches.slice(20);
    console.log(`🔧 STEP 3: Running AI analysis on top ${candidatesForAI.length} candidates.`);
    console.log(`🔧 Remaining ${candidatesForBasicMatch.length} candidates will receive basic matching.`);
   
