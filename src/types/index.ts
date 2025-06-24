@@ -128,6 +128,7 @@ export interface CampaignDraft {
   type: 'nurture' | 'enrichment' | 'keep-warm' | 'reengage' | 'nurture-reengage';
   targetAudience: string;
   tone: string;
+  emailLength?: 'short' | 'concise' | 'medium' | 'long';
   companyName: string;
   recruiterName: string;
   additionalContext: string;

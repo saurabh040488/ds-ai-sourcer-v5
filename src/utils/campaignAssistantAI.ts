@@ -81,6 +81,13 @@ AUDIENCE STEP SPECIFIC INSTRUCTIONS:
 - Do NOT ask for clarification or selection if the user has provided a clear target audience description
 - Recognize that users can provide their own target audience that may not match the suggestions - this is perfectly acceptable
 
+TONE STEP SPECIFIC INSTRUCTIONS:
+- When in the 'tone' step, also collect email length preference
+- Include both tone and email length options in the suggestions array
+- Default email length should be 'concise' if not specified
+- Email length options: 'short' (30-50 words), 'concise' (60-80 words), 'medium' (100-120 words), 'long' (150+ words)
+- Accept tone input in various formats and automatically include default email length
+
 RESPONSE FORMAT:
 Always respond with a JSON object containing:
 {
@@ -90,6 +97,7 @@ Always respond with a JSON object containing:
     "goal": "user's campaign goal",
     "matchedExampleId": "id-of-best-matching-example",
     "type": "campaign-type-from-matched-example",
+    "emailLength": "short|concise|medium|long",
     ...other draft fields
   },
   "nextStep": "goal|audience|tone|context|review|generate",
@@ -110,6 +118,7 @@ GUIDELINES:
 - CRITICAL: Automatically transition to 'audience' step when goal and matchedExampleId are set
 - CRITICAL: For audience step, put specific target audience options in suggestions array, not in message text
 - CRITICAL: Accept any target audience input from the user and proceed to the next step without asking for clarification
+- CRITICAL: For tone step, include email length preference collection
 
 Current conversation context: The user is ${getConversationStage(currentDraft)}`;
 
@@ -127,7 +136,7 @@ ${conversationContext}
 
 User input: "${userInput}"
 
-Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified, and automatically transition to 'audience' step when goal is set. For audience step, put specific target audience options in suggestions array. CRITICAL: Accept any target audience input and proceed to next step.`;
+Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified, and automatically transition to 'audience' step when goal is set. For audience step, put specific target audience options in suggestions array. For tone step, include email length collection. CRITICAL: Accept any target audience input and proceed to next step.`;
 
   try {
     console.log('📤 Sending request to OpenAI...');
@@ -166,7 +175,11 @@ Please process this input, classify against available campaign examples, and pro
     const result: AssistantResponse = {
       message: parsedResponse.message || "I'm here to help you create your campaign.",
       suggestions: parsedResponse.suggestions || [],
-      campaignDraft: { ...currentDraft, ...parsedResponse.campaignDraft },
+      campaignDraft: { 
+        emailLength: 'concise', // Default email length
+        ...currentDraft, 
+        ...parsedResponse.campaignDraft 
+      },
       nextStep: parsedResponse.nextStep || determineNextStep(currentDraft),
       isComplete: parsedResponse.isComplete || false
     };
@@ -212,8 +225,51 @@ Please process this input, classify against available campaign examples, and pro
         console.log('🎯 Detected target audience input, updating draft and proceeding to tone step');
         result.campaignDraft.targetAudience = userInput.trim();
         result.nextStep = 'tone';
-        result.message = `Perfect! I've set your target audience as "${userInput.trim()}". Now, what tone would you like for your campaign communications?`;
-        result.suggestions = ["Professional", "Friendly", "Casual", "Warm and approachable"];
+        result.message = `Perfect! I've set your target audience as "${userInput.trim()}". Now, what tone would you like for your campaign communications, and what email length do you prefer?`;
+        result.suggestions = [
+          "Professional tone, concise emails (60-80 words)",
+          "Friendly tone, medium emails (100-120 words)", 
+          "Professional tone, short emails (30-50 words)",
+          "Warm tone, long emails (150+ words)"
+        ];
+      }
+    }
+
+    // Handle tone and email length input detection
+    if (currentDraft.targetAudience && !currentDraft.tone && userInput.trim().length > 5) {
+      const toneKeywords = ['professional', 'friendly', 'casual', 'warm', 'formal'];
+      const lengthKeywords = ['short', 'concise', 'medium', 'long', 'brief', 'detailed'];
+      
+      const inputLower = userInput.toLowerCase();
+      const hasToneKeywords = toneKeywords.some(keyword => inputLower.includes(keyword));
+      const hasLengthKeywords = lengthKeywords.some(keyword => inputLower.includes(keyword));
+      
+      if (hasToneKeywords || hasLengthKeywords) {
+        console.log('🎨 Detected tone/length input, updating draft and proceeding to context step');
+        
+        // Extract tone
+        let detectedTone = 'professional'; // default
+        if (inputLower.includes('friendly')) detectedTone = 'friendly';
+        else if (inputLower.includes('casual')) detectedTone = 'casual';
+        else if (inputLower.includes('warm')) detectedTone = 'warm';
+        else if (inputLower.includes('formal')) detectedTone = 'formal';
+        
+        // Extract email length
+        let detectedLength = 'concise'; // default
+        if (inputLower.includes('short') || inputLower.includes('brief')) detectedLength = 'short';
+        else if (inputLower.includes('medium')) detectedLength = 'medium';
+        else if (inputLower.includes('long') || inputLower.includes('detailed')) detectedLength = 'long';
+        
+        result.campaignDraft.tone = detectedTone;
+        result.campaignDraft.emailLength = detectedLength as 'short' | 'concise' | 'medium' | 'long';
+        result.nextStep = 'context';
+        result.message = `Great choice on the ${detectedTone} tone and ${detectedLength} email length! We'll ensure the emails maintain a ${detectedTone} tone and are ${detectedLength} in length. Let's move on to gather any additional context or specific requirements you might have for this campaign. Is there any particular information or detail you'd like to include?`;
+        result.suggestions = [
+          "Include company benefits information",
+          "Focus on career development opportunities", 
+          "Highlight work-life balance",
+          "Emphasize competitive compensation"
+        ];
       }
     }
 
@@ -256,10 +312,25 @@ export async function generateCampaignFromDraft(draft: CampaignDraft): Promise<{
   // Get AI configuration for campaign generation
   const modelConfig = getAIModelForTask('campaignGeneration');
 
+  // Get email length specifications
+  const emailLengthSpecs = {
+    short: { range: '30-50 words', description: 'Brief and to the point' },
+    concise: { range: '60-80 words', description: 'Balanced and focused' },
+    medium: { range: '100-120 words', description: 'Detailed but readable' },
+    long: { range: '150+ words', description: 'Comprehensive and thorough' }
+  };
+
+  const lengthSpec = emailLengthSpecs[draft.emailLength || 'concise'];
+
   const systemPrompt = `You are an expert email campaign generator. Create a professional email sequence based on the provided campaign draft and matching example guideline.
 
 CAMPAIGN EXAMPLE GUIDELINE:
 ${JSON.stringify(matchingExample, null, 2)}
+
+EMAIL LENGTH REQUIREMENTS:
+- Target length: ${lengthSpec.range} (${lengthSpec.description})
+- Tone: ${draft.tone || 'professional'}
+- CRITICAL: Each email must be approximately ${lengthSpec.range}. This is a strict requirement.
 
 IMPORTANT: The campaign example structure above is a GUIDELINE and HINT for sequencing your campaign, not a strict template. Use it to understand the flow and approach, but create content that matches the specific draft requirements.
 
@@ -274,6 +345,7 @@ Return a JSON object with:
     "targetAudience": "target audience",
     "campaignGoal": "campaign goal",
     "tone": "tone",
+    "emailLength": "email length preference",
     "companyName": "company name",
     "recruiterName": "recruiter name",
     "contentSources": ["array of content sources"],
@@ -297,13 +369,15 @@ IMPORTANT:
 - First email should have delay: 0 and delayUnit: "immediately"
 - Subsequent emails should have appropriate delays in "business days"
 - Make content professional and engaging
+- Strictly adhere to the specified email length of ${lengthSpec.range}
 - Incorporate the specified tone and target audience
 - Use the guideline structure but adapt content to the specific draft`;
 
   const userPrompt = `Campaign Draft:
 ${JSON.stringify(draft, null, 2)}
 
-Generate the complete campaign with email sequence using the guideline structure.`;
+Generate the complete campaign with email sequence using the guideline structure.
+CRITICAL: Each email must be ${lengthSpec.range} in length with a ${draft.tone || 'professional'} tone.`;
 
   try {
     console.log('📤 Sending campaign generation request...');
@@ -350,7 +424,10 @@ Generate the complete campaign with email sequence using the guideline structure
 
     console.log('✅ Campaign generated successfully');
     return {
-      campaignData: result.campaignData,
+      campaignData: {
+        ...result.campaignData,
+        emailLength: draft.emailLength || 'concise' // Ensure emailLength is included
+      },
       emailSteps
     };
 
@@ -365,7 +442,7 @@ Generate the complete campaign with email sequence using the guideline structure
 function getConversationStage(draft: Partial<CampaignDraft>): string {
   if (!draft.goal) return 'starting the campaign creation process';
   if (!draft.targetAudience) return 'defining their target audience';
-  if (!draft.tone) return 'selecting the campaign tone';
+  if (!draft.tone) return 'selecting the campaign tone and email length';
   if (!draft.additionalContext) return 'providing additional context';
   return 'reviewing their campaign details';
 }
@@ -394,7 +471,7 @@ function createFallbackResponse(userInput: string, currentDraft: Partial<Campaig
       ]
     },
     audience: {
-      message: "Great! Now let's define your target audience. Who would you like to reach with this campaign?",
+      message: "Great goal! Now, who is your target audience for this campaign?",
       suggestions: recentSearches.length > 0 ? 
         // Use recent searches as audience suggestions
         recentSearches.slice(0, 3).map(search => `Candidates matching: "${search}"`) :
@@ -407,8 +484,13 @@ function createFallbackResponse(userInput: string, currentDraft: Partial<Campaig
         ]
     },
     tone: {
-      message: "Perfect! What tone would you like for your campaign communications?",
-      suggestions: ["Professional", "Friendly", "Casual", "Formal"]
+      message: "Perfect! What tone would you like for your campaign communications, and what email length do you prefer?",
+      suggestions: [
+        "Professional tone, concise emails (60-80 words)",
+        "Friendly tone, medium emails (100-120 words)", 
+        "Professional tone, short emails (30-50 words)",
+        "Warm tone, long emails (150+ words)"
+      ]
     },
     context: {
       message: "Excellent! Is there any additional context or specific requirements for this campaign?",
@@ -430,7 +512,10 @@ function createFallbackResponse(userInput: string, currentDraft: Partial<Campaig
   return {
     message: response.message,
     suggestions: response.suggestions,
-    campaignDraft: currentDraft,
+    campaignDraft: {
+      ...currentDraft,
+      emailLength: currentDraft.emailLength || 'concise' // Default to concise
+    },
     nextStep,
     isComplete: false
   };
@@ -442,30 +527,83 @@ function createFallbackCampaign(draft: CampaignDraft, example: CampaignExample):
 } {
   console.log('🔄 Creating fallback campaign...');
   
+  // Get email length specifications
+  const emailLengthSpecs = {
+    short: { minWords: 30, maxWords: 50 },
+    concise: { minWords: 60, maxWords: 80 },
+    medium: { minWords: 100, maxWords: 120 },
+    long: { minWords: 150, maxWords: 200 }
+  };
+  
+  const lengthSpec = emailLengthSpecs[draft.emailLength || 'concise'];
+  
   const campaignData = {
     name: draft.goal.substring(0, 50) + (draft.goal.length > 50 ? '...' : ''),
     type: example.campaignType,
     targetAudience: draft.targetAudience,
     campaignGoal: draft.goal,
     tone: draft.tone,
+    emailLength: draft.emailLength || 'concise',
     companyName: draft.companyName,
     recruiterName: draft.recruiterName,
     contentSources: example.collateralToUse,
     aiInstructions: draft.additionalContext
   };
 
-  const emailSteps: EmailStep[] = example.sequenceAndExamples.examples.map((exampleTitle, index) => ({
-    id: `step-${index + 1}`,
-    type: 'email',
-    subject: `{{First Name}}, ${exampleTitle.toLowerCase()}`,
-    content: `Hi {{First Name}},
+  // Create email content based on length preference
+  const createEmailContent = (index: number, title: string): string => {
+    const baseContent = `Hi {{First Name}},
 
-I hope this message finds you well. ${exampleTitle} at {{Company Name}}.
+I hope this message finds you well. ${title} at {{Company Name}}.
 
 ${draft.additionalContext || 'We have exciting opportunities that align with your background and career goals.'}
 
 Best regards,
-${draft.recruiterName}`,
+${draft.recruiterName}`;
+
+    // Adjust content length based on preference
+    if (draft.emailLength === 'short') {
+      return `Hi {{First Name}},
+
+${title} at {{Company Name}}. ${draft.additionalContext ? draft.additionalContext.split('.')[0] + '.' : 'We have exciting opportunities for you.'}
+
+Best regards,
+${draft.recruiterName}`;
+    } else if (draft.emailLength === 'medium') {
+      return `Hi {{First Name}},
+
+I hope this message finds you well. ${title} at {{Company Name}}.
+
+${draft.additionalContext || 'We have exciting opportunities that align with your background and career goals.'} I believe your experience at {{Current Company}} makes you an excellent fit for our team.
+
+I'd love to discuss how your skills and expertise could contribute to our organization. Would you be available for a brief conversation this week?
+
+Best regards,
+${draft.recruiterName}`;
+    } else if (draft.emailLength === 'long') {
+      return `Hi {{First Name}},
+
+I hope this message finds you well. ${title} at {{Company Name}}.
+
+${draft.additionalContext || 'We have exciting opportunities that align with your background and career goals.'} I've been particularly impressed by your experience at {{Current Company}} and believe you would be a valuable addition to our team.
+
+Our organization offers competitive compensation, comprehensive benefits, and a supportive work environment focused on professional growth and development. We're currently expanding our team and looking for talented professionals like yourself.
+
+I'd love to schedule a time to discuss these opportunities in more detail and answer any questions you might have. Would you be available for a brief conversation this week?
+
+Best regards,
+${draft.recruiterName}`;
+    } else {
+      // Default to concise (60-80 words)
+      return baseContent;
+    }
+  };
+
+  const emailSteps: EmailStep[] = example.sequenceAndExamples.examples.map((exampleTitle, index) => ({
+    id: `step-${index + 1}`,
+    type: 'email',
+    subject: `{{First Name}}, ${exampleTitle.toLowerCase()}`,
+    content: createEmailContent(index, exampleTitle),
     delay: index === 0 ? 0 : index * 2,
     delayUnit: index === 0 ? 'immediately' : 'business days'
   }));

@@ -34,6 +34,7 @@ export interface CampaignPrompt {
   contentSources: string[];
   aiInstructions: string;
   tone: string;
+  emailLength?: 'short' | 'concise' | 'medium' | 'long';
   companyName: string;
   recruiterName: string;
 }
@@ -55,6 +56,16 @@ export async function generateCampaignSequence(prompt: CampaignPrompt): Promise<
   const modelConfig = getAIModelForTask('campaignGeneration');
   const promptConfig = getPromptForTask('campaignGeneration');
 
+  // Define email length specifications
+  const emailLengthSpecs = {
+    short: { range: '30-50 words', description: 'Brief and to the point' },
+    concise: { range: '60-80 words', description: 'Balanced and focused' },
+    medium: { range: '100-120 words', description: 'Detailed but readable' },
+    long: { range: '150+ words', description: 'Comprehensive and thorough' }
+  };
+
+  const lengthSpec = emailLengthSpecs[prompt.emailLength || 'concise'];
+
   const systemPrompt = `${promptConfig.system}
 
 Campaign Type: ${prompt.campaignType}
@@ -63,6 +74,10 @@ Campaign Goal: ${prompt.campaignGoal}
 Company: ${prompt.companyName}
 Recruiter: ${prompt.recruiterName}
 Tone: ${prompt.tone}
+
+EMAIL LENGTH REQUIREMENTS:
+- Target length: ${lengthSpec.range} (${lengthSpec.description})
+- CRITICAL: Each email must be approximately ${lengthSpec.range}. This is a strict requirement.
 
 Content Sources:
 ${prompt.contentSources.join('\n')}
@@ -83,7 +98,7 @@ ${prompt.aiInstructions}`;
         },
         {
           role: "user",
-          content: "Generate the email sequence based on the provided parameters."
+          content: `Generate the email sequence based on the provided parameters. CRITICAL: Each email must be ${lengthSpec.range} in length with a ${prompt.tone} tone.`
         }
       ],
       temperature: modelConfig.temperature,
@@ -104,7 +119,8 @@ ${prompt.aiInstructions}`;
         temperature: modelConfig.temperature,
         max_tokens: modelConfig.maxTokens,
         usage: completion.usage,
-        campaignType: prompt.campaignType
+        campaignType: prompt.campaignType,
+        emailLength: prompt.emailLength || 'concise'
       }
     );
 
@@ -139,12 +155,55 @@ ${prompt.aiInstructions}`;
     
     console.log('🔄 Falling back to default sequence...');
     // Fallback to default sequence if API fails
-    const fallbackSequence: EmailStep[] = [
-      {
-        id: 'step-1',
-        type: 'email',
-        subject: '{{First Name}}, interested in a new opportunity?',
-        content: `Hi {{First Name}},
+    
+    // Get email length specifications
+    const emailLengthSpecs = {
+      short: { minWords: 30, maxWords: 50 },
+      concise: { minWords: 60, maxWords: 80 },
+      medium: { minWords: 100, maxWords: 120 },
+      long: { minWords: 150, maxWords: 200 }
+    };
+    
+    const lengthSpec = emailLengthSpecs[prompt.emailLength || 'concise'];
+    
+    // Create email content based on length preference
+    const createEmailContent = (index: number, title: string): string => {
+      if (prompt.emailLength === 'short') {
+        return `Hi {{First Name}},
+
+I came across your profile and was impressed by your experience. We have exciting opportunities at {{Company Name}} that might interest you.
+
+Would you be open to a brief conversation?
+
+Best regards,
+${prompt.recruiterName}`;
+      } else if (prompt.emailLength === 'medium') {
+        return `Hi {{First Name}},
+
+I hope this message finds you well. I came across your profile and was impressed by your experience in healthcare.
+
+We have some exciting opportunities at {{Company Name}} that I think would be a great fit for your background and career goals. Your experience at {{Current Company}} seems particularly relevant.
+
+Would you be open to a brief conversation about these opportunities? I'd be happy to share more details.
+
+Best regards,
+${prompt.recruiterName}`;
+      } else if (prompt.emailLength === 'long') {
+        return `Hi {{First Name}},
+
+I hope this message finds you well. I came across your profile and was particularly impressed by your experience and background in healthcare.
+
+We have some exciting opportunities at {{Company Name}} that I think would be a great fit for your skills and career goals. Your experience at {{Current Company}} seems particularly relevant to what we're looking for, and I believe you could make a significant impact on our team.
+
+Our organization offers competitive compensation, comprehensive benefits, and a supportive work environment focused on professional growth and development. We're currently expanding our team and looking for talented professionals like yourself.
+
+Would you be open to a brief conversation about these opportunities? I'd be happy to share more details and answer any questions you might have.
+
+Best regards,
+${prompt.recruiterName}`;
+      } else {
+        // Default to concise (60-80 words)
+        return `Hi {{First Name}},
 
 I hope this message finds you well. I came across your profile and was impressed by your experience in healthcare.
 
@@ -153,7 +212,16 @@ We have some exciting opportunities at {{Company Name}} that I think would be a 
 Would you be open to a brief conversation about these opportunities?
 
 Best regards,
-${prompt.recruiterName}`,
+${prompt.recruiterName}`;
+      }
+    };
+    
+    const fallbackSequence: EmailStep[] = [
+      {
+        id: 'step-1',
+        type: 'email',
+        subject: '{{First Name}}, interested in a new opportunity?',
+        content: createEmailContent(0, 'Opportunity'),
         delay: 0,
         delayUnit: 'immediately'
       },
@@ -161,16 +229,7 @@ ${prompt.recruiterName}`,
         id: 'step-2',
         type: 'email',
         subject: 'Following up on healthcare opportunities',
-        content: `Hi {{First Name}},
-
-I wanted to follow up on my previous message about opportunities at {{Company Name}}.
-
-I understand you're likely busy, but I believe these roles could be a significant step forward in your career. We offer competitive compensation, excellent benefits, and a supportive work environment.
-
-Would you have 10 minutes this week for a quick call?
-
-Best,
-${prompt.recruiterName}`,
+        content: createEmailContent(1, 'Follow-up'),
         delay: 3,
         delayUnit: 'business days'
       },
@@ -178,16 +237,7 @@ ${prompt.recruiterName}`,
         id: 'step-3',
         type: 'email',
         subject: 'Last follow-up - {{Company Name}} opportunities',
-        content: `Hi {{First Name}},
-
-This will be my final follow-up regarding the opportunities at {{Company Name}}.
-
-I wanted to make sure you didn't miss out on these positions that align well with your background. If you're interested in learning more, please feel free to reach out.
-
-If now isn't the right time, I completely understand and wish you all the best in your career.
-
-Best regards,
-${prompt.recruiterName}`,
+        content: createEmailContent(2, 'Final follow-up'),
         delay: 5,
         delayUnit: 'business days'
       }
