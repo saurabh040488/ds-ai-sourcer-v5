@@ -491,21 +491,26 @@ export const getSearchResults = async (query: string, projectId: string) => {
       
     if (error) {
       console.error('❌ Supabase: Error getting search results:', error);
-      return { data: null, error };
+      return { data: null, error, extracted_entities: null };
     } 
     
     if (!data || data.length === 0) {
       console.log('⚠️ Supabase: No search results found for query:', query);
-      return { data: null, error: { message: 'No results found' } };
+      return { data: null, error: { message: 'No results found' }, extracted_entities: null };
     }
     
     console.log('✅ Supabase: Search results retrieved successfully:', data.length);
+    console.log('🔍 FILTER STATE DEBUG: Retrieved extracted_entities from database:', data[0].extracted_entities);
     
-    // Return the results array from the first matching search
-    return { data: data[0].results, error: null, extracted_entities: data[0].extracted_entities };
+    // Return the results array from the first matching search along with extracted_entities
+    return { 
+      data: data[0].results, 
+      error: null, 
+      extracted_entities: data[0].extracted_entities 
+    };
   } catch (err) {
     console.error('❌ Supabase: Get search results exception:', err);
-    return { data: null, error: err as any };
+    return { data: null, error: err as any, extracted_entities: null };
   }
 };
 

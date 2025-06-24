@@ -326,7 +326,7 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     try {
       // Try to load saved search results with extracted entities
-      const { data: searchData, error } = await getSearchResults(search, currentProject.id);
+      const { data: searchData, error, extracted_entities } = await getSearchResults(search, currentProject.id);
       
       if (error) {
         console.error('❌ Error loading search results:', error);
@@ -337,11 +337,7 @@ const SearchView: React.FC<SearchViewProps> = ({
 
       if (searchData && searchData.length > 0) {
         console.log('✅ Loaded saved search data:', searchData.length);
-        
-        // Get the first search record to extract the original search query and entities
-        const searchRecord = searchData[0];
-        console.log('📊 Search record:', searchRecord);
-        console.log('🔍 FILTER STATE DEBUG: Raw search record from database:', searchRecord);
+        console.log('🔍 FILTER STATE DEBUG: Retrieved extracted_entities:', extracted_entities);
         
         // Convert database candidates to frontend format
         const candidateMatches: CandidateMatch[] = searchData.map((result: any) => {
@@ -367,17 +363,17 @@ const SearchView: React.FC<SearchViewProps> = ({
         setRecentSearchContext(search);
         
         // Extract filters from the saved search record
-        if (searchRecord.extracted_entities) {
-          console.log('🔍 Found saved extracted entities:', searchRecord.extracted_entities);
-          console.log('🔍 FILTER STATE DEBUG: extracted_entities from database:', searchRecord.extracted_entities);
+        if (extracted_entities) {
+          console.log('🔍 Found saved extracted entities:', extracted_entities);
+          console.log('🔍 FILTER STATE DEBUG: extracted_entities from database:', extracted_entities);
           
           const filters = {
-            jobTitles: searchRecord.extracted_entities.jobTitles || [],
-            locations: searchRecord.extracted_entities.locations || [],
-            experienceRange: searchRecord.extracted_entities.experienceRange || {},
-            skills: searchRecord.extracted_entities.skills || [],
-            industries: searchRecord.extracted_entities.industries || [],
-            education: searchRecord.extracted_entities.education
+            jobTitles: extracted_entities.jobTitles || [],
+            locations: extracted_entities.locations || [],
+            experienceRange: extracted_entities.experienceRange || {},
+            skills: extracted_entities.skills || [],
+            industries: extracted_entities.industries || [],
+            education: extracted_entities.education
           };
           
           console.log('🔍 FILTER STATE DEBUG: Created filters from database entities:', filters);
@@ -387,7 +383,7 @@ const SearchView: React.FC<SearchViewProps> = ({
           // Create search query object
           const searchQuery: SearchQuery = {
             originalQuery: search,
-            extractedEntities: searchRecord.extracted_entities
+            extractedEntities: extracted_entities
           };
           setCurrentSearchQuery(searchQuery);
           console.log('🔍 FILTER STATE DEBUG: Set currentSearchQuery from database:', searchQuery);
