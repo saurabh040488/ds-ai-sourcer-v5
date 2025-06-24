@@ -64,6 +64,12 @@ CONVERSATION FLOW:
 4. Additional Context: Collect any specific requirements or context
 5. Review & Generate: Confirm details and proceed to generation
 
+CRITICAL FLOW RULE:
+- Once the user provides a campaign goal and a matchedExampleId is determined and set in the campaignDraft, the nextStep should automatically transition to 'audience'
+- Do NOT wait for further user confirmation for this transition
+- Ensure isComplete remains false until all necessary information for generation is collected
+- The conversation should flow smoothly without requiring additional user prompts for confirmation at this stage
+
 RESPONSE FORMAT:
 Always respond with a JSON object containing:
 {
@@ -90,6 +96,7 @@ GUIDELINES:
 - Update the campaignDraft with collected information
 - Set isComplete to true only when ready to generate the campaign
 - CRITICAL: Always include matchedExampleId when a goal is identified
+- CRITICAL: Automatically transition to 'audience' step when goal and matchedExampleId are set
 
 Current conversation context: The user is ${getConversationStage(currentDraft)}`;
 
@@ -107,7 +114,7 @@ ${conversationContext}
 
 User input: "${userInput}"
 
-Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified.`;
+Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified, and automatically transition to 'audience' step when goal is set.`;
 
   try {
     console.log('📤 Sending request to OpenAI...');
@@ -150,6 +157,13 @@ Please process this input, classify against available campaign examples, and pro
       nextStep: parsedResponse.nextStep || determineNextStep(currentDraft),
       isComplete: parsedResponse.isComplete || false
     };
+
+    // Additional logic to ensure smooth flow
+    if (result.campaignDraft?.goal && result.campaignDraft?.matchedExampleId && !currentDraft.goal) {
+      // Goal was just set, automatically transition to audience
+      result.nextStep = 'audience';
+      console.log('🎯 Goal identified and matched, automatically transitioning to audience step');
+    }
 
     console.log('✅ Processed AI response:', result);
     return result;
