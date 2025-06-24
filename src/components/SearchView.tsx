@@ -317,7 +317,7 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     try {
       // Try to load saved search results with extracted entities
-      const { data: searchResults, error } = await getSearchResults(search, currentProject.id);
+      const { data: searchData, error } = await getSearchResults(search, currentProject.id);
       
       if (error) {
         console.error('❌ Error loading search results:', error);
@@ -326,11 +326,15 @@ const SearchView: React.FC<SearchViewProps> = ({
         return;
       }
 
-      if (searchResults && searchResults.length > 0) {
-        console.log('✅ Loaded saved search data:', searchResults.length);
+      if (searchData && searchData.length > 0) {
+        console.log('✅ Loaded saved search data:', searchData.length);
+        
+        // Get the first search record to extract the original search query and entities
+        const searchRecord = searchData[0];
+        console.log('📊 Search record:', searchRecord);
         
         // Convert database candidates to frontend format
-        const candidateMatches: CandidateMatch[] = searchResults.map((result: any) => {
+        const candidateMatches: CandidateMatch[] = searchData.map((result: any) => {
           // Find the candidate in our current candidates array
           const candidate = candidates.find(c => c.id === result.candidate_id);
           if (!candidate) {
@@ -353,16 +357,16 @@ const SearchView: React.FC<SearchViewProps> = ({
         setRecentSearchContext(search);
         
         // Extract filters from the saved search record
-        if (searchResults[0].extracted_entities) {
-          console.log('🔍 Found saved extracted entities:', searchResults[0].extracted_entities);
+        if (searchRecord.extracted_entities) {
+          console.log('🔍 Found saved extracted entities:', searchRecord.extracted_entities);
           
           const filters = {
-            jobTitles: searchResults[0].extracted_entities.jobTitles || [],
-            locations: searchResults[0].extracted_entities.locations || [],
-            experienceRange: searchResults[0].extracted_entities.experienceRange || {},
-            skills: searchResults[0].extracted_entities.skills || [],
-            industries: searchResults[0].extracted_entities.industries || [],
-            education: searchResults[0].extracted_entities.education
+            jobTitles: searchRecord.extracted_entities.jobTitles || [],
+            locations: searchRecord.extracted_entities.locations || [],
+            experienceRange: searchRecord.extracted_entities.experienceRange || {},
+            skills: searchRecord.extracted_entities.skills || [],
+            industries: searchRecord.extracted_entities.industries || [],
+            education: searchRecord.extracted_entities.education
           };
           
           setCurrentFilters(filters);
@@ -370,7 +374,7 @@ const SearchView: React.FC<SearchViewProps> = ({
           // Create search query object
           const searchQuery: SearchQuery = {
             originalQuery: search,
-            extractedEntities: searchResults[0].extracted_entities
+            extractedEntities: searchRecord.extracted_entities
           };
           setCurrentSearchQuery(searchQuery);
           
