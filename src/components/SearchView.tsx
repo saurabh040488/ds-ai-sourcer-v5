@@ -220,8 +220,8 @@ const SearchView: React.FC<SearchViewProps> = ({
     try {
       console.log('🤖 Starting streaming search with real-time updates...');
       
-      // Use streaming search for real-time results
-      await searchCandidatesWithStreaming(
+      // Use streaming search for real-time results and capture the final result
+      const finalMatches = await searchCandidatesWithStreaming(
         candidates, 
         searchQuery,
         (newMatches) => {
@@ -230,13 +230,13 @@ const SearchView: React.FC<SearchViewProps> = ({
         }
       );
 
-      console.log('✅ Streaming search completed');
+      console.log('✅ Streaming search completed with final matches:', finalMatches.length);
 
-      // Remove searching message and add results
+      // Remove searching message and add results based on FINAL matches count
       setMessages(prev => prev.filter(msg => !msg.isProcessing));
       
       let resultsMessage: Message;
-      if (currentMatches.length === 0) {
+      if (finalMatches.length === 0) {
         resultsMessage = {
           id: (Date.now() + 1).toString(),
           type: 'assistant',
@@ -248,7 +248,7 @@ const SearchView: React.FC<SearchViewProps> = ({
         resultsMessage = {
           id: (Date.now() + 1).toString(),
           type: 'assistant',
-          content: `🎯 Search complete! Found ${currentMatches.length} candidates using intelligent filtering + AI analysis. Results are being displayed with real-time scoring.`,
+          content: `🎯 Search complete! Found ${finalMatches.length} candidates using intelligent filtering + AI analysis. Results are being displayed with real-time scoring.`,
           timestamp: new Date(),
           noResultsFound: false
         };

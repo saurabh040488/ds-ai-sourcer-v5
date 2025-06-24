@@ -23,7 +23,7 @@ export async function searchCandidatesWithStreaming(
   }
 
   // Use the existing search function but with streaming updates
-  const allMatches = await searchCandidates(candidates, searchQuery);
+  const allMatches = await searchCandidates(candidates, searchQuery, onUpdate);
   
   // Simulate streaming by sending updates in batches
   const batchSize = 5;
@@ -42,6 +42,6 @@ export async function searchCandidatesWithStreaming(
     }
   }
   
-  console.log('✅ Streaming search completed');
+  console.log('✅ Streaming search completed with', streamingMatches.length, 'total matches');
   return streamingMatches;
 }
