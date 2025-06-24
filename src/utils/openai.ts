@@ -1,5 +1,31 @@
+import OpenAI from 'openai';
 import { getAIModelForTask, getPromptForTask } from '../config/ai';
-import { openai, logAIInteraction, logError, cleanJsonResponse } from './aiUtils';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true // Only for demo purposes
+});
+
+// Logging utility for OpenAI interactions
+const logAIInteraction = (operation: string, prompt: string, response: string, metadata?: any) => {
+  console.group(`🤖 AI ${operation}`);
+  console.log('📤 PROMPT SENT:', prompt);
+  console.log('📥 RESPONSE RECEIVED:', response);
+  if (metadata) {
+    console.log('📊 METADATA:', metadata);
+  }
+  console.groupEnd();
+};
+
+const logError = (operation: string, error: any, context?: any) => {
+  console.group(`❌ ERROR in ${operation}`);
+  console.error('Error:', error);
+  if (context) {
+    console.log('Context:', context);
+  }
+  console.groupEnd();
+};
 
 export interface CampaignPrompt {
   campaignType: string;

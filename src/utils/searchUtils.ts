@@ -1,10 +1,45 @@
 import { Candidate, SearchQuery, CandidateMatch, MatchExplanation } from '../types';
+import OpenAI from 'openai';
 import { getAIModelForTask, getPromptForTask } from '../config/ai';
-import { openai, cleanJsonResponse, logAIInteraction, logError } from './aiUtils';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
+// Logging utility
+const logAIInteraction = (operation: string, prompt: string, response: string, metadata?: any) => {
+  console.group(`🤖 AI ${operation}`);
+  console.log('📤 PROMPT SENT:', prompt);
+  console.log('📥 RESPONSE RECEIVED:', response);
+  if (metadata) {
+    console.log('📊 METADATA:', metadata);
+  }
+  console.groupEnd();
+};
+
+const logError = (operation: string, error: any, context?: any) => {
+  console.group(`❌ ERROR in ${operation}`);
+  console.error('Error:', error);
+  if (context) {
+    console.log('Context:', context);
+  }
+  console.groupEnd();
+};
 
 // Utility function to clean OpenAI API response from markdown code blocks
 const cleanJSONResponse = (response: string): string => {
-  return cleanJsonResponse(response);
+  if (!response || typeof response !== 'string') {
+    return response;
+  }
+  
+  // Remove markdown code block delimiters
+  return response
+    .replace(/^```json\s*/i, '') // Remove opening ```json
+    .replace(/^```\s*/i, '')     // Remove opening ```
+    .replace(/\s*```\s*$/i, '')  // Remove closing ```
+    .trim();                     // Remove any surrounding whitespace
 };
 
 export async function expandJobTitles(jobTitle: string): Promise<string[]> {
@@ -270,14 +305,7 @@ export async function searchCandidates(
   
   // STEP 3: AI analysis only on pre-filtered candidates with streaming
   console.log('🔧 STEP 3: Running AI analysis on keyword-matched candidates...');
-
-   
-   const candidatesForAI = keywordMatches.slice(0, 20);
-   const candidatesForBasicMatch = keywordMatches.slice(20);
-   console.log(`🔧 STEP 3: Running AI analysis on top ${candidatesForAI.length} candidates.`);
-   console.log(`🔧 Remaining ${candidatesForBasicMatch.length} candidates will receive basic matching.`);
-  
-  const aiMatches = await runAIAnalysisWithStreaming(candidatesForAI, searchQuery, onPartialResults);
+  const aiMatches = await runAIAnalysisWithStreaming(keywordMatches, searchQuery, onPartialResults);
   
   const endTime = Date.now();
   console.log(`🎯 Search completed in ${endTime - startTime}ms`);

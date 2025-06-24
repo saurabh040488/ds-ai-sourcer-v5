@@ -1,5 +1,11 @@
+import OpenAI from 'openai';
 import { getAIModelForTask, getPromptForTask } from '../config/ai';
-import { openai, cleanJsonResponse, parseJsonSafely } from './aiUtils';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
 
 export interface CompanyBrandingData {
   name: string;
@@ -19,6 +25,127 @@ interface CompanyCollateral {
   links: string[]; // Array of URLs if text content includes links
   last_updated: string; // ISO timestamp
   version: string; // Incremental version
+}
+
+function cleanJsonResponse(response: string): string {
+  console.log('🧹 Cleaning JSON response...');
+  console.log('📥 Raw response:', response);
+  
+  // Remove any markdown code blocks more aggressively
+  let cleaned = response
+    .replace(/```json\s*/gi, '') // Remove opening ```json
+    .replace(/```\s*/g, '')      // Remove closing ```
+    .replace(/^```/gm, '')       // Remove any ``` at start of line
+    .replace(/```$/gm, '');      // Remove any ``` at end of line
+  
+  // Remove any leading/trailing whitespace
+  cleaned = cleaned.trim();
+  
+  // If the response starts with explanatory text, try to find the JSON
+  const jsonStart = cleaned.indexOf('{');
+  const jsonEnd = cleaned.lastIndexOf('}');
+  
+  if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart <= jsonEnd) {
+    cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+  }
+  
+  // Additional cleanup for common issues
+  cleaned = cleaned
+    .replace(/^\s*[\w\s]*?(?=\{)/g, '') // Remove any text before the first {
+    .replace(/\}\s*[\w\s]*$/g, '}')     // Remove any text after the last }
+    .trim();
+  
+  console.log('🧹 Cleaned JSON:', cleaned);
+  return cleaned;
+}
+
+function parseJsonSafely(jsonString: string): any {
+  console.log('🔍 Attempting to parse JSON safely...');
+  
+  try {
+    // First attempt: direct parsing
+    return JSON.parse(jsonString);
+  } catch (firstError) {
+    console.log('❌ First parse attempt failed:', firstError.message);
+    
+    try {
+      // Second attempt: try to fix common JSON issues
+      let fixedJson = jsonString;
+      
+      // Fix unescaped quotes in string values
+      fixedJson = fixedJson.replace(
+        /"([^"]*)":\s*"([^"]*(?:\\.[^"]*)*)"/g,
+        (match, key, value) => {
+          // Don't double-escape already escaped quotes
+          const cleanValue = value.replace(/\\"/g, '"').replace(/"/g, '\\"');
+          return `"${key}": "${cleanValue}"`;
+        }
+      );
+      
+      // Fix array string values
+      fixedJson = fixedJson.replace(
+        /"([^"]*)":\s*\[([^\]]*)\]/g,
+        (match, key, arrayContent) => {
+          // Fix quotes in array elements
+          const fixedArrayContent = arrayContent.replace(
+            /"([^"]*(?:\\.[^"]*)*)"/g,
+            (itemMatch, itemValue) => {
+              const cleanItemValue = itemValue.replace(/\\"/g, '"').replace(/"/g, '\\"');
+              return `"${cleanItemValue}"`;
+            }
+          );
+          return `"${key}": [${fixedArrayContent}]`;
+        }
+      );
+      
+      console.log('🔧 Attempting to parse fixed JSON...');
+      return JSON.parse(fixedJson);
+    } catch (secondError) {
+      console.log('❌ Second parse attempt failed:', secondError.message);
+      
+      try {
+        // Third attempt: manually construct object from key-value pairs
+        console.log('🔧 Attempting manual JSON reconstruction...');
+        
+        const result: any = {};
+        
+        // Extract basic fields with improved regex
+        const extractField = (fieldName: string, defaultValue: any = '') => {
+          const regex = new RegExp(`"${fieldName}":\\s*"([^"]*(?:\\\\.[^"]*)*)"`, 'i');
+          const match = jsonString.match(regex);
+          return match ? match[1].replace(/\\"/g, '"') : defaultValue;
+        };
+        
+        const extractArray = (fieldName: string, defaultValue: any[] = []) => {
+          const regex = new RegExp(`"${fieldName}":\\s*\\[(.*?)\\]`, 'is');
+          const match = jsonString.match(regex);
+          if (match) {
+            const arrayContent = match[1];
+            const items = arrayContent.match(/"([^"]*(?:\\.[^"]*)*)"/g);
+            return items ? items.map(item => item.slice(1, -1).replace(/\\"/g, '"')) : defaultValue;
+          }
+          return defaultValue;
+        };
+        
+        result.name = extractField('name', 'Unknown Company');
+        result.description = extractField('description', 'Professional organization focused on excellence.');
+        result.industry = extractField('industry', 'Business Services');
+        result.size = extractField('size', 'Medium');
+        result.location = extractField('location', 'Multiple locations');
+        result.values = extractArray('values', ['Excellence', 'Integrity', 'Innovation']);
+        result.benefits = extractArray('benefits', ['Competitive Salary', 'Health Benefits', 'Professional Growth']);
+        result.cultureKeywords = extractArray('cultureKeywords', ['professional', 'collaborative', 'growth-focused']);
+        result.logoUrl = extractField('logoUrl', undefined);
+        
+        console.log('✅ Manual JSON reconstruction successful:', result);
+        return result;
+        
+      } catch (thirdError) {
+        console.error('❌ All JSON parsing attempts failed:', thirdError.message);
+        throw new Error(`Failed to parse JSON after multiple attempts: ${firstError.message}`);
+      }
+    }
+  }
 }
 
 function parseCollateralJsonSafely(jsonString: string): CompanyCollateral[] {
