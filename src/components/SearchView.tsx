@@ -93,6 +93,11 @@ const SearchView: React.FC<SearchViewProps> = ({
     }
   }, [isProcessing, isSearching]);
 
+  // Add logging for currentFilters state changes
+  useEffect(() => {
+    console.log('🔍 FILTER STATE DEBUG: currentFilters state changed:', currentFilters);
+  }, [currentFilters]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isProcessing) return;
@@ -133,6 +138,7 @@ const SearchView: React.FC<SearchViewProps> = ({
       setCurrentSearchQuery(searchQuery);
       
       console.log('✅ Entity extraction completed:', searchQuery);
+      console.log('🔍 FILTER STATE DEBUG: About to create filters from searchQuery:', searchQuery);
       
       // Create filters display object
       const filters = {
@@ -144,7 +150,9 @@ const SearchView: React.FC<SearchViewProps> = ({
         education: searchQuery.extractedEntities.education
       };
 
+      console.log('🔍 FILTER STATE DEBUG: Created filters object:', filters);
       setCurrentFilters(filters);
+      console.log('🔍 FILTER STATE DEBUG: Called setCurrentFilters with:', filters);
 
       // Remove processing message and add filter extraction result
       setMessages(prev => prev.filter(msg => !msg.isProcessing));
@@ -192,6 +200,8 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     console.log('🔍 Starting streaming candidate search...');
     console.log('📊 Search parameters:', searchQuery);
+    console.log('🔍 FILTER STATE DEBUG: currentFilters before search:', currentFilters);
+    console.log('🔍 FILTER STATE DEBUG: currentSearchQuery before search:', currentSearchQuery);
 
     setIsSearching(true);
     setCurrentMatches([]);
@@ -226,6 +236,8 @@ const SearchView: React.FC<SearchViewProps> = ({
       );
 
       console.log('✅ Streaming search completed with final matches:', finalMatches.length);
+      console.log('🔍 FILTER STATE DEBUG: currentFilters after search completion:', currentFilters);
+      console.log('🔍 FILTER STATE DEBUG: currentSearchQuery after search completion:', currentSearchQuery);
 
       // Remove searching message and add results based on FINAL matches count
       setMessages(prev => prev.filter(msg => !msg.isProcessing));
@@ -275,11 +287,13 @@ const SearchView: React.FC<SearchViewProps> = ({
 
   const handleViewResults = () => {
     console.log('👀 Viewing results for', currentMatches.length, 'candidates');
+    console.log('🔍 FILTER STATE DEBUG: currentFilters when viewing results:', currentFilters);
     setShowResults(true);
   };
 
   const handleEditFilters = (filters: any) => {
     console.log('✏️ Editing filters:', filters);
+    console.log('🔍 FILTER STATE DEBUG: handleEditFilters called with:', filters);
     setCurrentFilters(filters);
     
     // Update the search query with new filters
@@ -297,11 +311,13 @@ const SearchView: React.FC<SearchViewProps> = ({
       };
       setCurrentSearchQuery(updatedQuery);
       console.log('✅ Search query updated with new filters:', updatedQuery);
+      console.log('🔍 FILTER STATE DEBUG: Updated currentSearchQuery:', updatedQuery);
     }
   };
 
   const handleRecentSearchClick = async (search: string) => {
     console.log('🔍 Clicked recent search:', search);
+    console.log('🔍 FILTER STATE DEBUG: handleRecentSearchClick called for:', search);
     
     if (!currentProject) {
       console.error('❌ No current project selected');
@@ -325,6 +341,7 @@ const SearchView: React.FC<SearchViewProps> = ({
         // Get the first search record to extract the original search query and entities
         const searchRecord = searchData[0];
         console.log('📊 Search record:', searchRecord);
+        console.log('🔍 FILTER STATE DEBUG: Raw search record from database:', searchRecord);
         
         // Convert database candidates to frontend format
         const candidateMatches: CandidateMatch[] = searchData.map((result: any) => {
@@ -352,6 +369,7 @@ const SearchView: React.FC<SearchViewProps> = ({
         // Extract filters from the saved search record
         if (searchRecord.extracted_entities) {
           console.log('🔍 Found saved extracted entities:', searchRecord.extracted_entities);
+          console.log('🔍 FILTER STATE DEBUG: extracted_entities from database:', searchRecord.extracted_entities);
           
           const filters = {
             jobTitles: searchRecord.extracted_entities.jobTitles || [],
@@ -362,7 +380,9 @@ const SearchView: React.FC<SearchViewProps> = ({
             education: searchRecord.extracted_entities.education
           };
           
+          console.log('🔍 FILTER STATE DEBUG: Created filters from database entities:', filters);
           setCurrentFilters(filters);
+          console.log('🔍 FILTER STATE DEBUG: Called setCurrentFilters with database filters:', filters);
           
           // Create search query object
           const searchQuery: SearchQuery = {
@@ -370,10 +390,12 @@ const SearchView: React.FC<SearchViewProps> = ({
             extractedEntities: searchRecord.extracted_entities
           };
           setCurrentSearchQuery(searchQuery);
+          console.log('🔍 FILTER STATE DEBUG: Set currentSearchQuery from database:', searchQuery);
           
           console.log('✅ Filters loaded from database:', filters);
         } else {
           console.log('⚠️ No extracted entities found in saved search, extracting from query...');
+          console.log('🔍 FILTER STATE DEBUG: No extracted_entities in database, falling back to extraction');
           
           // Fallback: extract entities from the search string
           try {
@@ -386,11 +408,14 @@ const SearchView: React.FC<SearchViewProps> = ({
               industries: searchQuery.extractedEntities.industries || [],
               education: searchQuery.extractedEntities.education
             };
+            console.log('🔍 FILTER STATE DEBUG: Extracted filters from query text:', filters);
             setCurrentFilters(filters);
             setCurrentSearchQuery(searchQuery);
             console.log('✅ Filters extracted from query text:', filters);
+            console.log('🔍 FILTER STATE DEBUG: Set filters and searchQuery from extraction:', { filters, searchQuery });
           } catch (filterError) {
             console.warn('⚠️ Could not extract filters for recent search:', filterError);
+            console.log('🔍 FILTER STATE DEBUG: Filter extraction failed, using basic filters');
             // Set basic empty filters
             const basicFilters = {
               jobTitles: [],
@@ -415,6 +440,7 @@ const SearchView: React.FC<SearchViewProps> = ({
             };
             setCurrentSearchQuery(basicSearchQuery);
             console.log('✅ Set basic filters for recent search');
+            console.log('🔍 FILTER STATE DEBUG: Set basic filters and searchQuery:', { basicFilters, basicSearchQuery });
           }
         }
         
@@ -429,9 +455,11 @@ const SearchView: React.FC<SearchViewProps> = ({
         setMessages([loadedMessage]);
         
         console.log('✅ Displaying saved search results');
+        console.log('🔍 FILTER STATE DEBUG: Final state after recent search load - currentFilters:', currentFilters);
       } else {
         // No saved results, perform new search
         console.log('🔄 No saved results, performing new search');
+        console.log('🔍 FILTER STATE DEBUG: No saved results found, falling back to new search');
         setInputValue(search);
         // Auto-submit the search
         setTimeout(() => {
@@ -443,6 +471,7 @@ const SearchView: React.FC<SearchViewProps> = ({
       }
     } catch (error) {
       console.error('❌ Error handling recent search click:', error);
+      console.log('🔍 FILTER STATE DEBUG: Error in handleRecentSearchClick:', error);
       // Fall back to new search
       setInputValue(search);
     }
@@ -483,12 +512,14 @@ const SearchView: React.FC<SearchViewProps> = ({
             <button 
               onClick={() => {
                 console.log('🔄 Starting new search session...');
+                console.log('🔍 FILTER STATE DEBUG: New search button clicked, clearing all state');
                 setMessages([]);
                 setShowResults(false);
                 setCurrentMatches([]);
                 setCurrentFilters(null);
                 setCurrentSearchQuery(null);
                 setRecentSearchContext(null);
+                console.log('🔍 FILTER STATE DEBUG: All state cleared for new search');
               }}
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-lg"
             >

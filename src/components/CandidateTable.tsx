@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Filter, ChevronLeft, ChevronRight, Bookmark, MessageSquare, MoreHorizontal, CheckSquare, Square, Star, MapPin, Briefcase, Clock, Edit, TrendingUp, Zap, ChevronDown, ChevronUp, Plus, Users, Mail, X, Phone, Calendar, Award, Building } from 'lucide-react';
 import { CandidateMatch, Candidate } from '../types';
 import ShortlistModal from './ShortlistModal';
@@ -36,6 +36,11 @@ const CandidateTable: React.FC<CandidateTableProps> = ({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentMatches = matches.slice(startIndex, endIndex);
+
+  // Add logging for currentFilters prop changes
+  useEffect(() => {
+    console.log('🔍 FILTER STATE DEBUG: CandidateTable received currentFilters prop:', currentFilters);
+  }, [currentFilters]);
 
   const toggleSelection = (candidateId: string) => {
     const newSelected = new Set(selectedCandidates);
@@ -177,7 +182,12 @@ const CandidateTable: React.FC<CandidateTableProps> = ({
 
   // Display active filters
   const displayFilters = () => {
-    if (!currentFilters) return null;
+    if (!currentFilters) {
+      console.log('🔍 FILTER STATE DEBUG: displayFilters called but currentFilters is null/undefined:', currentFilters);
+      return null;
+    }
+
+    console.log('🔍 FILTER STATE DEBUG: displayFilters processing currentFilters:', currentFilters);
 
     const activeFilters = [];
     
@@ -226,6 +236,7 @@ const CandidateTable: React.FC<CandidateTableProps> = ({
       });
     }
 
+    console.log('🔍 FILTER STATE DEBUG: displayFilters created activeFilters:', activeFilters);
     return activeFilters;
   };
 
@@ -331,7 +342,10 @@ const CandidateTable: React.FC<CandidateTableProps> = ({
               </div>
               {onEditFilters && (
                 <button 
-                  onClick={onEditFilters}
+                  onClick={() => {
+                    console.log('🔍 FILTER STATE DEBUG: Edit Filters button clicked, currentFilters:', currentFilters);
+                    onEditFilters();
+                  }}
                   className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
                 >
                   <Edit className="w-4 h-4" />
