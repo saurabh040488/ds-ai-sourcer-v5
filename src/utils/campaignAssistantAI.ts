@@ -77,6 +77,9 @@ AUDIENCE STEP SPECIFIC INSTRUCTIONS:
 - Each suggestion should be a complete, actionable target audience description
 - Example suggestions format: ["Oncology Nurses in Denver with 5+ years experience", "Clinical Nurse Specialists in London", "Emergency Room Nurses in New York"]
 - Do NOT embed suggestions within the message text - always use the suggestions array
+- CRITICAL: When the user provides ANY target audience description (whether from suggestions or their own input), accept it and move to the next step
+- Do NOT ask for clarification or selection if the user has provided a clear target audience description
+- Recognize that users can provide their own target audience that may not match the suggestions - this is perfectly acceptable
 
 RESPONSE FORMAT:
 Always respond with a JSON object containing:
@@ -106,6 +109,7 @@ GUIDELINES:
 - CRITICAL: Always include matchedExampleId when a goal is identified
 - CRITICAL: Automatically transition to 'audience' step when goal and matchedExampleId are set
 - CRITICAL: For audience step, put specific target audience options in suggestions array, not in message text
+- CRITICAL: Accept any target audience input from the user and proceed to the next step without asking for clarification
 
 Current conversation context: The user is ${getConversationStage(currentDraft)}`;
 
@@ -123,7 +127,7 @@ ${conversationContext}
 
 User input: "${userInput}"
 
-Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified, and automatically transition to 'audience' step when goal is set. For audience step, put specific target audience options in suggestions array.`;
+Please process this input, classify against available campaign examples, and provide the next step in the campaign creation process. Include matchedExampleId in the campaignDraft when a goal is identified, and automatically transition to 'audience' step when goal is set. For audience step, put specific target audience options in suggestions array. CRITICAL: Accept any target audience input and proceed to next step.`;
 
   try {
     console.log('📤 Sending request to OpenAI...');
@@ -188,6 +192,29 @@ Please process this input, classify against available campaign examples, and pro
       result.message = "Great! Now let's define your target audience. Based on your recent searches, I've prepared some options for you to choose from, or you can describe a different audience.";
       
       console.log('✅ Generated audience suggestions from recent searches:', audienceSuggestions);
+    }
+
+    // CRITICAL: Handle target audience input detection
+    if (currentDraft.goal && !currentDraft.targetAudience && userInput.trim().length > 10) {
+      // User has provided substantial input that could be a target audience
+      // Check if this looks like a target audience description
+      const audienceKeywords = ['candidates', 'nurses', 'professionals', 'specialists', 'workers', 'staff', 'employees', 'people', 'individuals', 'practitioners', 'technicians', 'administrators', 'managers', 'directors', 'coordinators'];
+      const locationKeywords = ['in', 'from', 'at', 'near', 'around', 'within'];
+      const experienceKeywords = ['years', 'experience', 'experienced', 'senior', 'junior', 'entry', 'level'];
+      
+      const inputLower = userInput.toLowerCase();
+      const hasAudienceKeywords = audienceKeywords.some(keyword => inputLower.includes(keyword));
+      const hasLocationKeywords = locationKeywords.some(keyword => inputLower.includes(keyword));
+      const hasExperienceKeywords = experienceKeywords.some(keyword => inputLower.includes(keyword));
+      
+      // If the input contains audience-related keywords or is substantial, treat it as target audience
+      if (hasAudienceKeywords || hasLocationKeywords || hasExperienceKeywords || userInput.trim().length > 20) {
+        console.log('🎯 Detected target audience input, updating draft and proceeding to tone step');
+        result.campaignDraft.targetAudience = userInput.trim();
+        result.nextStep = 'tone';
+        result.message = `Perfect! I've set your target audience as "${userInput.trim()}". Now, what tone would you like for your campaign communications?`;
+        result.suggestions = ["Professional", "Friendly", "Casual", "Warm and approachable"];
+      }
     }
 
     console.log('✅ Processed AI response:', result);
