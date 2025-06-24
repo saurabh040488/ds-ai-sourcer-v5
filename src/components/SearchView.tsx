@@ -451,61 +451,6 @@ const SearchView: React.FC<SearchViewProps> = ({
                       Intelligent Candidate Search
                     </h2>
                     
-                    {/* Recent Searches 
-                    {recentSearches.length > 0 && (
-                      <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200 max-w-3xl mx-auto">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-blue-600" />
-                          Recent Searches
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {recentSearches.slice(0, 6).map((search, index) => (
-                            <button
-                              key={index}
-                              onClick={() => handleRecentSearchClick(search)}
-                              className="p-3 text-left bg-gray-50 hover:bg-blue-50 rounded-lg transition-colors text-sm text-gray-700 hover:text-blue-700 border border-gray-200 hover:border-blue-300"
-                            >
-                              <div className="flex items-start gap-2">
-                                <Search className="w-4 h-4 mt-0.5 text-gray-400" />
-                                <span className="truncate">"{search}"</span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}*/}
-                    
-                    {/* Search Process Overview 
-                    <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 max-w-3xl mx-auto">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-purple-600" />
-                        How Our Streaming Search Works
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs font-bold">1</div>
-                          <div>
-                            <div className="font-medium text-gray-900">AI Entity Extraction</div>
-                            <div className="text-gray-600">Extract job titles, locations, skills, and requirements</div>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold">2</div>
-                          <div>
-                            <div className="font-medium text-gray-900">Smart Filtering</div>
-                            <div className="text-gray-600">Apply hard filters + fuzzy matching to narrow candidates</div>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold">3</div>
-                          <div>
-                            <div className="font-medium text-gray-900">Streaming AI Analysis</div>
-                            <div className="text-gray-600">Real-time AI scoring with live result updates</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>*/}
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl mx-auto">
                       {[
                         "Registered Nurse in New York specializing in pediatric care, with 5+ years of experience",
@@ -524,7 +469,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                           <div className="flex items-start gap-3">
                             <Search className="w-5 h-5 text-purple-600 mt-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                              "{query}"
+                              {query}
                             </span>
                           </div>
                         </button>
