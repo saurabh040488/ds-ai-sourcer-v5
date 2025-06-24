@@ -28,6 +28,20 @@ const logError = (operation: string, error: any, context?: any) => {
   console.groupEnd();
 };
 
+// Utility function to clean OpenAI API response from markdown code blocks
+const cleanJSONResponse = (response: string): string => {
+  if (!response || typeof response !== 'string') {
+    return response;
+  }
+  
+  // Remove markdown code block delimiters
+  return response
+    .replace(/^```json\s*/i, '') // Remove opening ```json
+    .replace(/^```\s*/i, '')     // Remove opening ```
+    .replace(/\s*```\s*$/i, '')  // Remove closing ```
+    .trim();                     // Remove any surrounding whitespace
+};
+
 export async function expandJobTitles(jobTitle: string): Promise<string[]> {
   if (!jobTitle || typeof jobTitle !== 'string') {
     console.error('❌ Invalid job title for expansion:', jobTitle);
@@ -78,7 +92,7 @@ export async function expandJobTitles(jobTitle: string): Promise<string[]> {
       }
     );
 
-    const expandedTitles = JSON.parse(response);
+    const expandedTitles = JSON.parse(cleanJSONResponse(response));
     
     if (!Array.isArray(expandedTitles)) {
       throw new Error('Response is not an array');
@@ -118,9 +132,9 @@ function basicJobTitleExpansion(jobTitle: string): string[] {
     'director of nursing': ['Director of Nursing', 'DON', 'Nursing Director', 'Chief Nursing Officer', 'CNO'],
     'surgical technologist': ['Surgical Technologist', 'Surgical Tech', 'Operating Room Technician', 'OR Tech'],
     'medical assistant': ['Medical Assistant', 'MA', 'Clinical Assistant', 'Healthcare Assistant'],
-    'physical therapist': ['Physical Therapist', 'PT', 'Physiotherapist', 'Rehabilitation Therapist'],
-    'occupational therapist': ['Occupational Therapist', 'OT', 'Rehabilitation Therapist'],
-    'respiratory therapist': ['Respiratory Therapist', 'RT', 'Pulmonary Therapist', 'Breathing Therapist'],
+    'physical therapist': ['Physical Therapist', 'PT', 'Physiotherapist', 'Rehabilitation Therapist', 'Physical Therapy Specialist'],
+    'occupational therapist': ['Occupational Therapist', 'OT', 'Rehabilitation Therapist', 'Occupational Therapy Specialist'],
+    'respiratory therapist': ['Respiratory Therapist', 'RT', 'Pulmonary Therapist', 'Breathing Therapist', 'Respiratory Care Practitioner'],
     'pharmacist': ['Pharmacist', 'PharmD', 'Clinical Pharmacist', 'Hospital Pharmacist', 'Retail Pharmacist'],
     'radiologic technologist': ['Radiologic Technologist', 'Radiology Tech', 'X-Ray Technician', 'Medical Imaging Technologist'],
     'laboratory technician': ['Laboratory Technician', 'Lab Tech', 'Medical Laboratory Technician', 'Clinical Lab Tech'],
@@ -208,7 +222,7 @@ export async function extractEntities(query: string): Promise<SearchQuery> {
       }
     );
 
-    const extractedData = JSON.parse(response);
+    const extractedData = JSON.parse(cleanJSONResponse(response));
     
     const result = {
       originalQuery: query,
@@ -704,7 +718,7 @@ Evaluate this match and provide detailed scoring with specific reasons.`;
       }
     );
 
-    const result = JSON.parse(response);
+    const result = JSON.parse(cleanJSONResponse(response));
     
     const explanation = {
       score: Math.min(100, Math.max(0, result.score || 0)),
@@ -748,7 +762,10 @@ function basicJobTitleExtraction(query: string): string[] {
     'clinical nurse specialist': ['Clinical Nurse Specialist', 'CNS'],
     'licensed practical nurse': ['Licensed Practical Nurse', 'LPN'],
     'healthcare administrator': ['Healthcare Administrator', 'Medical Administrator'],
-    'director of nursing': ['Director of Nursing', 'DON', 'Nursing Director']
+    'director of nursing': ['Director of Nursing', 'DON', 'Nursing Director'],
+    'physical therapist': ['Physical Therapist', 'PT', 'Physiotherapist'],
+    'occupational therapist': ['Occupational Therapist', 'OT'],
+    'respiratory therapist': ['Respiratory Therapist', 'RT']
   };
   
   const found = new Set<string>();
@@ -846,7 +863,10 @@ function basicSkillsExtraction(query: string): string[] {
     'spanish': ['Spanish Language', 'Bilingual', 'Spanish Fluency'],
     'bilingual': ['Bilingual', 'Multilingual'],
     'ehr': ['Electronic Health Records', 'EHR', 'Medical Records'],
-    'surgery': ['Surgical', 'Operating Room', 'Perioperative Care']
+    'surgery': ['Surgical', 'Operating Room', 'Perioperative Care'],
+    'physical therapy': ['Physical Therapy', 'Rehabilitation', 'PT'],
+    'occupational therapy': ['Occupational Therapy', 'Rehabilitation', 'OT'],
+    'respiratory therapy': ['Respiratory Therapy', 'Pulmonary Care', 'RT']
   };
   
   const found = new Set<string>();
@@ -870,7 +890,7 @@ function basicIndustryExtraction(query: string): string[] {
   console.log('🔄 Using basic industry extraction for:', query);
   
   const lowerQuery = query.toLowerCase();
-  const industryPatterns = ['healthcare', 'hospital', 'clinic', 'medical', 'nursing'];
+  const industryPatterns = ['healthcare', 'hospital', 'clinic', 'medical', 'nursing', 'therapy', 'rehabilitation'];
   const result = industryPatterns.filter(industry => lowerQuery.includes(industry));
   
   console.log('🔄 Basic industries extracted:', result);
