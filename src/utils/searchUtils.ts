@@ -289,10 +289,8 @@ export async function searchCandidates(
   console.log(`✂️ Hard filters reduced candidates from ${candidates.length} to ${filteredCandidates.length}`);
   
   if (filteredCandidates.length === 0) {
-    console.log('❌ No candidates passed hard filters, falling back to all candidates');
-    // If no candidates pass hard filters, use all candidates but with lower scores
-    return await runAIAnalysisOnAll(candidates.slice(0, 0), searchQuery, onPartialResults);
-    // return []
+    console.log('❌ No candidates passed hard filters, returning empty results');
+    return [];
   }
   
   // STEP 2: Apply simple keyword matching for additional scoring
@@ -301,10 +299,8 @@ export async function searchCandidates(
   console.log(`🎯 Keyword matching selected ${keywordMatches.length} candidates for AI analysis`);
   
   if (keywordMatches.length === 0) {
-    console.log('❌ No candidates passed keyword matching, using filtered candidates');
-    // Use filtered candidates if keyword matching fails
-    return await runAIAnalysisOnAll(filteredCandidates.slice(0, 0), searchQuery, onPartialResults);
-    // return []
+    console.log('❌ No candidates passed keyword matching, returning empty results');
+    return [];
   }
   
   // STEP 3: AI analysis only on pre-filtered candidates with streaming
@@ -521,8 +517,7 @@ function applySimpleKeywordMatching(candidates: Candidate[], searchQuery: Search
   // Sort by keyword score and take candidates with meaningful scores
   const sortedCandidates = candidatesWithScores
     .filter(item => item.keywordScore > 0) // Only candidates with some relevance
-    .sort((a, b) => b.keywordScore - a.keywordScore)
-    .slice(0, Math.min(25, candidatesWithScores.length)); // Take top 25 for AI analysis
+    .sort((a, b) => b.keywordScore - a.keywordScore);
   
   console.log('🎯 Keyword matching scores:');
   sortedCandidates.slice(0, 8).forEach((item, index) => {
