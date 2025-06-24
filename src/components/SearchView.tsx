@@ -17,6 +17,7 @@ interface Message {
   searchQuery?: SearchQuery;
   isProcessing?: boolean;
   showSearchButton?: boolean;
+  noResultsFound?: boolean;
   searchProgress?: {
     stage: string;
     current: number;
@@ -234,12 +235,24 @@ const SearchView: React.FC<SearchViewProps> = ({
       // Remove searching message and add results
       setMessages(prev => prev.filter(msg => !msg.isProcessing));
       
-      const resultsMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: `🎯 Search complete! Found candidates using intelligent filtering + AI analysis. Results are being displayed with real-time scoring.`,
-        timestamp: new Date()
-      };
+      let resultsMessage: Message;
+      if (currentMatches.length === 0) {
+        resultsMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: `❌ No candidates found matching your search criteria.`,
+          timestamp: new Date(),
+          noResultsFound: true
+        };
+      } else {
+        resultsMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: `🎯 Search complete! Found ${currentMatches.length} candidates using intelligent filtering + AI analysis. Results are being displayed with real-time scoring.`,
+          timestamp: new Date(),
+          noResultsFound: false
+        };
+      }
       
       setMessages(prev => [...prev, resultsMessage]);
       
@@ -602,7 +615,46 @@ const SearchView: React.FC<SearchViewProps> = ({
                               </div>
                             )}
                             
-                            {message.type === 'assistant' && message.extractedFilters && !message.isProcessing && (
+                            {/* No Results Found UI */}
+                            {message.type === 'assistant' && message.noResultsFound && (
+                              <div className="mt-6 p-6 bg-red-50 border border-red-200 rounded-xl text-center">
+                                <Users className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                                <h4 className="text-xl font-semibold text-red-800 mb-2">No Candidates Found</h4>
+                                <p className="text-red-700 mb-6">
+                                  Your current search criteria did not yield any matches in our database.
+                                  Please try adjusting your filters or broadening your search.
+                                </p>
+                                <div className="flex justify-center gap-4">
+                                  <button
+                                    onClick={() => {
+                                      console.log('✏️ Opening filter editor from no results message...');
+                                      setShowFilterModal(true);
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm font-medium transition-colors"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                    Adjust Filters
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      console.log('🔄 Starting new search session from no results message...');
+                                      setMessages([]);
+                                      setShowResults(false);
+                                      setCurrentMatches([]);
+                                      setCurrentFilters(null);
+                                      setCurrentSearchQuery(null);
+                                      setRecentSearchContext(null);
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                    Start New Search
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {message.type === 'assistant' && message.extractedFilters && !message.isProcessing && !message.noResultsFound && (
                               <div className="mt-6">
                                 {/* Extracted Filters Display */}
                                 <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
@@ -743,7 +795,7 @@ const SearchView: React.FC<SearchViewProps> = ({
                             )}
 
                             {/* Show results button after search is complete */}
-                            {message.type === 'assistant' && !message.isProcessing && !message.showSearchButton && currentMatches.length > 0 && (
+                            {message.type === 'assistant' && !message.isProcessing && !message.showSearchButton && !message.noResultsFound && currentMatches.length > 0 && (
                               <div className="mt-4">
                                 <button 
                                   onClick={handleViewResults}

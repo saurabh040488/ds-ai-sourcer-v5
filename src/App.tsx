@@ -110,32 +110,36 @@ function AppContent() {
       
       console.log('✅ Search completed:', searchResults.length, 'matches found');
       
-      // Save search to database
-      const searchRecord = {
-        user_id: user.id,
-        project_id: currentProject.id,
-        query: query.originalQuery,
-        extracted_entities: query.extractedEntities || {},
-        filters: {},
-        results_count: searchResults.length,
-        results: searchResults.map(match => ({
-          candidate_id: match.candidate?.id || 'unknown',
-          score: match.explanation?.score || 0,
-          category: match.explanation?.category || 'potential',
-          reasons: match.explanation?.reasons || []
-        }))
-      };
-      
-      const { error: saveError } = await saveSearch(searchRecord);
-      if (saveError) {
-        console.error('❌ Error saving search:', saveError);
+      // Save search to database and update recent searches ONLY if results are found
+      if (searchResults.length > 0) {
+        const searchRecord = {
+          user_id: user.id,
+          project_id: currentProject.id,
+          query: query.originalQuery,
+          extracted_entities: query.extractedEntities || {},
+          filters: {},
+          results_count: searchResults.length,
+          results: searchResults.map(match => ({
+            candidate_id: match.candidate?.id || 'unknown',
+            score: match.explanation?.score || 0,
+            category: match.explanation?.category || 'potential',
+            reasons: match.explanation?.reasons || []
+          }))
+        };
+        
+        const { error: saveError } = await saveSearch(searchRecord);
+        if (saveError) {
+          console.error('❌ Error saving search:', saveError);
+        } else {
+          console.log('✅ Search saved to database');
+          // Update recent searches
+          setRecentSearches(prev => {
+            const filtered = prev.filter(s => s !== query.originalQuery);
+            return [query.originalQuery, ...filtered].slice(0, 10);
+          });
+        }
       } else {
-        console.log('✅ Search saved to database');
-        // Update recent searches
-        setRecentSearches(prev => {
-          const filtered = prev.filter(s => s !== query.originalQuery);
-          return [query.originalQuery, ...filtered].slice(0, 10);
-        });
+        console.log('⚠️ No candidates found, search not saved to database or recent searches.');
       }
     } catch (error) {
       console.error('❌ Error in handleSearch:', error);
