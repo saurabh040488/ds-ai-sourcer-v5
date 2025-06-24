@@ -199,20 +199,6 @@ function AppContent() {
     }
   };
 
-  const handleSaveRecentSearch = (search: string) => {
-    if (!search || typeof search !== 'string') {
-      console.warn('⚠️ Invalid search string:', search);
-      return;
-    }
-    
-    console.log('📝 Recent search will be saved:', search);
-    // Update recent searches immediately for better UX
-    setRecentSearches(prev => {
-      const filtered = prev.filter(s => s !== search);
-      return [search, ...filtered].slice(0, 10);
-    });
-  };
-
   const handleViewChange = (view: string) => {
     setCurrentView(view);
     if (view !== 'campaigns' && view !== 'beta-campaigns') {
@@ -228,7 +214,6 @@ function AppContent() {
             onSearch={handleSearch}
             matches={matches}
             isLoading={isLoading}
-            onSaveRecentSearch={handleSaveRecentSearch}
             recentSearches={recentSearches}
             candidates={candidates}
             currentProject={currentProject}

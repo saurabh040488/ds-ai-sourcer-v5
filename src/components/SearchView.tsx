@@ -30,7 +30,6 @@ interface SearchViewProps {
   onSearch: (query: SearchQuery) => void;
   matches: CandidateMatch[];
   isLoading: boolean;
-  onSaveRecentSearch: (search: string) => void;
   recentSearches?: string[];
   candidates: Candidate[];
   currentProject?: Project | null;
@@ -40,7 +39,6 @@ const SearchView: React.FC<SearchViewProps> = ({
   onSearch, 
   matches, 
   isLoading, 
-  onSaveRecentSearch,
   recentSearches = [],
   candidates,
   currentProject
@@ -100,9 +98,6 @@ const SearchView: React.FC<SearchViewProps> = ({
     if (!inputValue.trim() || isProcessing) return;
 
     console.log('🚀 Starting search process for query:', inputValue);
-
-    // Save to recent searches
-    onSaveRecentSearch(inputValue);
 
     const userMessage: Message = {
       id: Date.now().toString(),
