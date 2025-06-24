@@ -450,9 +450,6 @@ const SearchView: React.FC<SearchViewProps> = ({
                     <h2 className="text-2xl font-semibold text-gray-900 mb-3">
                       Intelligent Candidate Search
                     </h2>
-                    <p className="text-gray-600 mb-4 max-w-2xl mx-auto">
-                      Describe your ideal candidate in natural language. I'll use smart filtering and AI analysis to find the best matches from our database of {candidates.length.toLocaleString()} healthcare professionals.
-                    </p>
                     
                     {/* Recent Searches */}
                     {recentSearches.length > 0 && (
