@@ -27,7 +27,8 @@ const CampaignAssistant: React.FC<CampaignAssistantProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [campaignDraft, setCampaignDraft] = useState<Partial<CampaignDraft>>({
     companyName: 'HCA Healthcare',
-    recruiterName: user?.full_name || 'Sarah Johnson'
+    recruiterName: user?.full_name || 'Sarah Johnson',
+    emailLength: 'concise' // Default to concise (60-80 words)
   });
   const [currentStep, setCurrentStep] = useState<'goal' | 'audience' | 'tone' | 'context' | 'review' | 'generate'>('goal');
   
@@ -203,7 +204,7 @@ You'll now be taken to the campaign editor where you can review and customize ea
     const labels = {
       goal: 'Campaign Goal',
       audience: 'Target Audience',
-      tone: 'Communication Tone',
+      tone: 'Tone & Length',
       context: 'Additional Context',
       review: 'Review & Confirm',
       generate: 'Generate Campaign'
@@ -262,7 +263,7 @@ You'll now be taken to the campaign editor where you can review and customize ea
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${Math.min(((currentStepIndex + 1) / progressSteps.length) * 100, 100)}%` }}
             />
           </div>
@@ -346,6 +347,17 @@ You'll now be taken to the campaign editor where you can review and customize ea
                           <div>
                             <span className="font-medium text-purple-700">Tone:</span>
                             <span className="text-purple-600 ml-2">{message.campaignDraft.tone}</span>
+                          </div>
+                        )}
+                        {message.campaignDraft.emailLength && (
+                          <div>
+                            <span className="font-medium text-purple-700">Email Length:</span>
+                            <span className="text-purple-600 ml-2">
+                              {message.campaignDraft.emailLength === 'short' ? 'Short (30-50 words)' :
+                               message.campaignDraft.emailLength === 'concise' ? 'Concise (60-80 words)' :
+                               message.campaignDraft.emailLength === 'medium' ? 'Medium (100-120 words)' :
+                               'Long (150+ words)'}
+                            </span>
                           </div>
                         )}
                         {message.campaignDraft.type && (

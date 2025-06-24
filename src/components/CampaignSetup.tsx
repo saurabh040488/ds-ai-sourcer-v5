@@ -49,6 +49,7 @@ const CampaignSetup: React.FC<CampaignSetupProps> = ({
   const [targetAudience, setTargetAudience] = useState('');
   const [campaignGoal, setCampaignGoal] = useState('');
   const [tone, setTone] = useState('professional');
+  const [emailLength, setEmailLength] = useState<'short' | 'concise' | 'medium' | 'long'>('concise');
   const [companyName, setCompanyName] = useState('HCA Healthcare');
   const [recruiterName, setRecruiterName] = useState('Sarah Johnson');
   
@@ -136,6 +137,14 @@ const CampaignSetup: React.FC<CampaignSetupProps> = ({
     'Target specific locations or departments'
   ];
 
+  // Email length options
+  const emailLengthOptions = [
+    { value: 'short', label: 'Short', description: '30-50 words, brief and to the point' },
+    { value: 'concise', label: 'Concise', description: '60-80 words, balanced and focused' },
+    { value: 'medium', label: 'Medium', description: '100-120 words, detailed but readable' },
+    { value: 'long', label: 'Long', description: '150+ words, comprehensive and thorough' }
+  ];
+
   // Auto-generate campaign name when key fields change
   React.useEffect(() => {
     if (selectedType && targetAudience && campaignGoal) {
@@ -216,6 +225,7 @@ const CampaignSetup: React.FC<CampaignSetupProps> = ({
         contentSources: contentSources.map(source => `${source.title}: ${source.content}`),
         aiInstructions,
         tone,
+        emailLength,
         companyName,
         recruiterName
       };
@@ -245,6 +255,7 @@ const CampaignSetup: React.FC<CampaignSetupProps> = ({
             contentSources,
             aiInstructions,
             tone,
+            emailLength,
             companyName,
             recruiterName
           };
@@ -518,6 +529,22 @@ const CampaignSetup: React.FC<CampaignSetupProps> = ({
                     <option value="formal">Formal</option>
                   </select>
                 </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Length</label>
+                  <select
+                    value={emailLength}
+                    onChange={(e) => setEmailLength(e.target.value as 'short' | 'concise' | 'medium' | 'long')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    {emailLengthOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label} ({option.description})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
                   <input
