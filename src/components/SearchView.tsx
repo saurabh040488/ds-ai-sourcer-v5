@@ -101,8 +101,8 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     console.log('🚀 Starting search process for query:', inputValue);
 
-    // Save to recent searches
-    onSaveRecentSearch(inputValue);
+    // DO NOT save to recent searches here - only save after successful database save
+    // This will be handled in App.tsx after the search is saved to the database
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -256,7 +256,9 @@ const SearchView: React.FC<SearchViewProps> = ({
       
       setMessages(prev => [...prev, resultsMessage]);
       
-      // Call the parent onSearch for any additional handling
+      // Call the parent onSearch for any additional handling (including database save)
+      // The parent component (App.tsx) will handle saving to database and updating recent searches
+      // ONLY if there are results found
       onSearch(searchQuery);
       
     } catch (error) {
@@ -315,7 +317,7 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     try {
       // Try to load saved search results with extracted entities
-      const { data: searchData, error } = await getSearchResults(search, currentProject.id);
+      const { data: searchResults, error } = await getSearchResults(search, currentProject.id);
       
       if (error) {
         console.error('❌ Error loading search results:', error);
@@ -324,15 +326,11 @@ const SearchView: React.FC<SearchViewProps> = ({
         return;
       }
 
-      if (searchData && searchData.length > 0) {
-        console.log('✅ Loaded saved search data:', searchData.length);
-        
-        // Get the first search record to extract the original search query and entities
-        const searchRecord = searchData[0];
-        console.log('📊 Search record:', searchRecord);
+      if (searchResults && searchResults.length > 0) {
+        console.log('✅ Loaded saved search data:', searchResults.length);
         
         // Convert database candidates to frontend format
-        const candidateMatches: CandidateMatch[] = searchData.map((result: any) => {
+        const candidateMatches: CandidateMatch[] = searchResults.map((result: any) => {
           // Find the candidate in our current candidates array
           const candidate = candidates.find(c => c.id === result.candidate_id);
           if (!candidate) {
@@ -355,16 +353,16 @@ const SearchView: React.FC<SearchViewProps> = ({
         setRecentSearchContext(search);
         
         // Extract filters from the saved search record
-        if (searchRecord.extracted_entities) {
-          console.log('🔍 Found saved extracted entities:', searchRecord.extracted_entities);
+        if (searchResults[0].extracted_entities) {
+          console.log('🔍 Found saved extracted entities:', searchResults[0].extracted_entities);
           
           const filters = {
-            jobTitles: searchRecord.extracted_entities.jobTitles || [],
-            locations: searchRecord.extracted_entities.locations || [],
-            experienceRange: searchRecord.extracted_entities.experienceRange || {},
-            skills: searchRecord.extracted_entities.skills || [],
-            industries: searchRecord.extracted_entities.industries || [],
-            education: searchRecord.extracted_entities.education
+            jobTitles: searchResults[0].extracted_entities.jobTitles || [],
+            locations: searchResults[0].extracted_entities.locations || [],
+            experienceRange: searchResults[0].extracted_entities.experienceRange || {},
+            skills: searchResults[0].extracted_entities.skills || [],
+            industries: searchResults[0].extracted_entities.industries || [],
+            education: searchResults[0].extracted_entities.education
           };
           
           setCurrentFilters(filters);
@@ -372,7 +370,7 @@ const SearchView: React.FC<SearchViewProps> = ({
           // Create search query object
           const searchQuery: SearchQuery = {
             originalQuery: search,
-            extractedEntities: searchRecord.extracted_entities
+            extractedEntities: searchResults[0].extracted_entities
           };
           setCurrentSearchQuery(searchQuery);
           
